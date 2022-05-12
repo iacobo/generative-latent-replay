@@ -15,7 +15,7 @@ dependencies:
   - matplotlib
 
   # Machine Learning
-  - scikit-learn
+  #- scikit-learn
   - pytorch::pytorch
   - pytorch::torchvision
   - cudatoolkit=11.3
