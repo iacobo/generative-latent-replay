@@ -9,13 +9,11 @@ dependencies:
 
   # Core scientific python
   - numpy
-  - pandas
   
   # Plotting
   - matplotlib
 
   # Machine Learning
-  #- scikit-learn
   - pytorch::pytorch
   - pytorch::torchvision
   - cudatoolkit=11.3
@@ -30,5 +28,8 @@ dependencies:
   - nbclean
   - nbresuse
 
+  # pip requirements for git hosted package
+  - wheel
+  - buildtools
   - pip:
       - git+https://github.com/iacobo/avalanche.git
