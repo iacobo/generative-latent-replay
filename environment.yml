@@ -29,7 +29,7 @@ dependencies:
   - nbresuse
 
   # pip requirements for git hosted package
-  - wheel
-  - buildtools
   - pip:
+      - wheel
+      - buildtools
       - git+https://github.com/iacobo/avalanche.git
