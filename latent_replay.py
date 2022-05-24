@@ -91,14 +91,10 @@ class LatentReplay(SupervisedTemplate):
             # Synaptic Intelligence is not applied to the last fully
             # connected layer (and implicitly to "freeze below" ones.
             plugins.append(
-                SynapticIntelligencePlugin(
-                    ewc_lambda, excluded_parameters=[fc_name]
-                )
+                SynapticIntelligencePlugin(ewc_lambda, excluded_parameters=[fc_name])
             )
 
-        optimizer = SGD(
-            model.parameters(), lr=lr, momentum=momentum, weight_decay=l2
-        )
+        optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
 
         if criterion is None:
             criterion = CrossEntropyLoss()
@@ -132,7 +128,7 @@ class LatentReplay(SupervisedTemplate):
         self.model.output.train()
 
         if self.clock.train_exp_counter > 0:
-            # In Latent Replay batch 0 is treated differently as the 
+            # In Latent Replay batch 0 is treated differently as the
             # feature extractor is left more free to learn.
             # This is executed for batch > 0, in which we freeze layers
             # below "self.freeze_below_layer" (which usually is the latent
@@ -140,8 +136,7 @@ class LatentReplay(SupervisedTemplate):
 
             # "freeze_up_to" will freeze layers below "freeze_below_layer"
             freeze_up_to(
-                self.model,
-                freeze_until_layer=self.freeze_below_layer,
+                self.model, freeze_until_layer=self.freeze_below_layer,
             )
 
             # Adapt the model and optimizer
@@ -204,15 +199,11 @@ class LatentReplay(SupervisedTemplate):
             self.optimizer.zero_grad()
             if self.clock.train_exp_counter > 0:
                 lat_mb_x = self.rm[0][
-                    mb_it
-                    * self.replay_mb_size : (mb_it + 1)
-                    * self.replay_mb_size
+                    mb_it * self.replay_mb_size : (mb_it + 1) * self.replay_mb_size
                 ]
                 lat_mb_x = lat_mb_x.to(self.device)
                 lat_mb_y = self.rm[1][
-                    mb_it
-                    * self.replay_mb_size : (mb_it + 1)
-                    * self.replay_mb_size
+                    mb_it * self.replay_mb_size : (mb_it + 1) * self.replay_mb_size
                 ]
                 lat_mb_y = lat_mb_y.to(self.device)
                 self.mbatch[1] = torch.cat((self.mb_y, lat_mb_y), 0)
@@ -254,15 +245,12 @@ class LatentReplay(SupervisedTemplate):
 
     def _after_training_exp(self, **kwargs):
         h = min(
-            self.rm_sz // (self.clock.train_exp_counter + 1),
-            self.cur_acts.size(0),
+            self.rm_sz // (self.clock.train_exp_counter + 1), self.cur_acts.size(0),
         )
 
         curr_data = self.experience.dataset
         idxs_cur = torch.randperm(self.cur_acts.size(0))[:h]
-        rm_add_y = torch.tensor(
-            [curr_data.targets[idx_cur] for idx_cur in idxs_cur]
-        )
+        rm_add_y = torch.tensor([curr_data.targets[idx_cur] for idx_cur in idxs_cur])
 
         rm_add = [self.cur_acts[idxs_cur], rm_add_y]
 

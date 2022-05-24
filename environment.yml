@@ -1,4 +1,4 @@
-name: env-01
+name: env-glr
 
 channels:
   - conda-forge
@@ -6,6 +6,7 @@ channels:
 
 dependencies:
   - python=3.9
+  - pip
 
   # Core scientific python
   - numpy

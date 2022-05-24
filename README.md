@@ -8,7 +8,7 @@ To run experiments, first create and activate a virtual environment:
 
 ```python
 conda env create -f environment.yml
-conda activate env-01
+conda activate env-glr
 ```
 
 Then [run](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/execute.html) the appropriate notebooks detailing the experiments.
