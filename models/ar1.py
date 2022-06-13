@@ -217,7 +217,9 @@ class AR1(SupervisedTemplate):
             ]
             self.cwr_plugin.reset_weights(self.cwr_plugin.cur_class)
 
-    def make_train_dataloader(self, num_workers=0, shuffle=True, **kwargs):
+    def make_train_dataloader(
+        self, num_workers=0, shuffle=True, pin_memory=True, **kwargs
+    ):
         """
         Called after the dataset instantiation. Initialize the data loader.
 
@@ -256,10 +258,12 @@ class AR1(SupervisedTemplate):
             num_workers=num_workers,
             batch_size=current_batch_mb_size,
             shuffle=shuffle,
+            pin_memory=pin_memory,
         )
 
     def training_epoch(self, **kwargs):
         for mb_it, self.mbatch in enumerate(self.dataloader):
+            self._unpack_minibatch()
             self._before_training_iteration(**kwargs)
 
             self.optimizer.zero_grad()

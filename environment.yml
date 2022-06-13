@@ -10,7 +10,7 @@ dependencies:
 
   # Core scientific python
   - numpy
-  
+
   # Plotting
   - matplotlib
 
@@ -33,4 +33,4 @@ dependencies:
   - pip:
       - wheel
       - buildtools
-      - git+https://github.com/iacobo/avalanche.git
+      - git+https://github.com/ContinualAI/avalanche.git

@@ -192,10 +192,14 @@ class LatentReplay(SupervisedTemplate):
             shuffle=shuffle,
         )
 
+    # JA: See here for implementing custom loss function:
+    # https://github.com/ContinualAI/avalanche/pull/604
+
     # JA: For sampled latent replays, define sampling
     # here (i.e. self.rm[0] = sampled x, self.rm[1] = sampled y)
     def training_epoch(self, **kwargs):
         for mb_it, self.mbatch in enumerate(self.dataloader):
+            self._unpack_minibatch()
             self._before_training_iteration(**kwargs)
 
             self.optimizer.zero_grad()
