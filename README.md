@@ -17,3 +17,6 @@ Then [run](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/exec
 
 **Alternatively** you can orun the notebook directly in Google Colab:
 [![Benchmark baseline](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/iacobo/generative-latent-replay/blob/main/main.ipynb)
+
+
+NOTE: Search "generative latent replay" (no quotes) to get relevant papers for discussion in paper, namely generative feature replay, latent autoencoder replay etc.

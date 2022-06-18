@@ -1,163 +1,30 @@
-from typing import Optional, Sequence
-
 import torch
-from torch import Tensor
-from torch.nn import CrossEntropyLoss
-from torch.optim import SGD
 from torch.utils.data import DataLoader
 
-from avalanche.models import MobilenetV1
-from avalanche.training.plugins import (
-    SupervisedPlugin,
-    EvaluationPlugin,
-    SynapticIntelligencePlugin,
-)
-from avalanche.training.templates.supervised import SupervisedTemplate
-from avalanche.training.utils import (
-    get_last_fc_layer,
-    freeze_up_to,
-)
-from avalanche.training.plugins.evaluation import default_evaluator
+from avalanche.training import AR1
 
 
-class LatentReplay(SupervisedTemplate):
-    """Latent Replay.
+class LatentReplay(AR1):
+    """AR1 with Latent Replay.
 
-    Allows for the use of both Synaptic Intelligence and
+    This implementations allows for the use of both Synaptic Intelligence and
     Latent Replay to protect the lower level of the model from forgetting.
+
+    While the original papers show how to use those two techniques in a mutual
+    exclusive way, this implementation allows for the use of both of them
+    concurrently. This behaviour is controlled by passing proper constructor
+    arguments).
     """
 
-    def __init__(
-        self,
-        criterion=None,
-        lr: float = 0.001,
-        momentum=0.9,
-        l2=0.0005,
-        train_epochs: int = 4,
-        rm_sz: int = 1500,
-        freeze_below_layer: str = "lat_features.19.bn.beta",
-        latent_layer_num: int = 19,
-        ewc_lambda: float = 0,
-        train_mb_size: int = 128,
-        eval_mb_size: int = 128,
-        device=None,
-        plugins: Optional[Sequence[SupervisedPlugin]] = None,
-        evaluator: EvaluationPlugin = default_evaluator,
-        eval_every=-1,
+    def make_train_dataloader(
+        self, num_workers=0, shuffle=True, pin_memory=True, **kwargs
     ):
-        """
-        Creates an instance of the Latent Replay strategy.
-
-        :param criterion: The loss criterion to use. Defaults to None, in which
-            case the cross entropy loss is used.
-        :param lr: The learning rate (SGD optimizer).
-        :param momentum: The momentum (SGD optimizer).
-        :param l2: The L2 penalty used for weight decay.
-        :param train_epochs: The number of training epochs. Defaults to 4.
-        :param rm_sz: The size of the replay buffer. The replay buffer is shared
-            across classes. Defaults to 1500.
-        :param freeze_below_layer: A string describing the name of the layer
-            to use while freezing the lower (nearest to the input) part of the
-            model. The given layer is not frozen (exclusive).
-        :param latent_layer_num: The number of the layer to use as the Latent
-            Replay Layer. Usually this is the same of `freeze_below_layer`.
-        :param ewc_lambda: The Synaptic Intelligence lambda term. Defaults to
-            0, which means that the Synaptic Intelligence regularization
-            will not be applied.
-        :param train_mb_size: The train minibatch size. Defaults to 128.
-        :param eval_mb_size: The eval minibatch size. Defaults to 128.
-        :param device: The device to use. Defaults to None (cpu).
-        :param plugins: (optional) list of StrategyPlugins.
-        :param evaluator: (optional) instance of EvaluationPlugin for logging
-            and metric computations.
-        :param eval_every: the frequency of the calls to `eval` inside the
-            training loop.
-                if -1: no evaluation during training.
-                if  0: calls `eval` after the final epoch of each training
-                    experience.
-                if >0: calls `eval` every `eval_every` epochs and at the end
-                    of all the epochs for a single experience.
-        """
-
-        if plugins is None:
-            plugins = []
-
-        # Model setup
-        model = MobilenetV1(pretrained=True, latent_layer_num=latent_layer_num)
-
-        fc_name, fc_layer = get_last_fc_layer(model)
-
-        if ewc_lambda != 0:
-            # Synaptic Intelligence is not applied to the last fully
-            # connected layer (and implicitly to "freeze below" ones.
-            plugins.append(
-                SynapticIntelligencePlugin(ewc_lambda, excluded_parameters=[fc_name])
-            )
-
-        optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
-
-        if criterion is None:
-            criterion = CrossEntropyLoss()
-
-        self.ewc_lambda = ewc_lambda
-        self.freeze_below_layer = freeze_below_layer
-        self.rm_sz = rm_sz
-        self.lr = lr
-        self.momentum = momentum
-        self.l2 = l2
-        self.rm = None
-        self.cur_acts: Optional[Tensor] = None
-        self.replay_mb_size = 0
-
-        super().__init__(
-            model,
-            optimizer,
-            criterion,
-            train_mb_size=train_mb_size,
-            train_epochs=train_epochs,
-            eval_mb_size=eval_mb_size,
-            device=device,
-            plugins=plugins,
-            evaluator=evaluator,
-            eval_every=eval_every,
-        )
-
-    def _before_training_exp(self, **kwargs):
-        self.model.eval()
-        self.model.end_features.train()
-        self.model.output.train()
-
-        if self.clock.train_exp_counter > 0:
-            # In Latent Replay batch 0 is treated differently as the
-            # feature extractor is left more free to learn.
-            # This is executed for batch > 0, in which we freeze layers
-            # below "self.freeze_below_layer" (which usually is the latent
-            # replay layer!).
-
-            # "freeze_up_to" will freeze layers below "freeze_below_layer"
-            freeze_up_to(
-                self.model, freeze_until_layer=self.freeze_below_layer,
-            )
-
-            # Adapt the model and optimizer
-            self.model = self.model.to(self.device)
-            self.optimizer = SGD(
-                self.model.parameters(),
-                lr=self.lr,
-                momentum=self.momentum,
-                weight_decay=self.l2,
-            )
-
-        # super()... will run S.I. plugin callbacks
-        super()._before_training_exp(**kwargs)
-
-    def make_train_dataloader(self, num_workers=0, shuffle=True, **kwargs):
         """
         Called after the dataset instantiation. Initialize the data loader.
 
-        A "custom" dataloader is used: instead of using
+        For AR1 a "custom" dataloader is used: instead of using
         `self.train_mb_size` as the batch size, the data loader batch size will
-        be computed as `self.train_mb_size - latent_mb_size`. `latent_mb_size`
+        be computed ad `self.train_mb_size - latent_mb_size`. `latent_mb_size`
         is in turn computed as:
 
         `
@@ -184,12 +51,13 @@ class LatentReplay(SupervisedTemplate):
         current_batch_mb_size = max(1, current_batch_mb_size)
         self.replay_mb_size = max(0, self.train_mb_size - current_batch_mb_size)
 
-        # Only supports SIT scenarios (no task labels).
+        # AR1 only supports SIT scenarios (no task labels).
         self.dataloader = DataLoader(
             self.adapted_dataset,
             num_workers=num_workers,
             batch_size=current_batch_mb_size,
             shuffle=shuffle,
+            pin_memory=pin_memory,
         )
 
     # JA: See here for implementing custom loss function:
@@ -250,10 +118,20 @@ class LatentReplay(SupervisedTemplate):
             self._after_training_iteration(**kwargs)
 
     def _after_training_exp(self, **kwargs):
+        """
+        After training the model, fit new GMM on current batch of data
+        and store GMM and associated frozen label generator (i.e. network head).
+        
+        Adds GMM and associated label generator to growing container of
+        domain-specific samplers.
+        """
         h = min(
             self.rm_sz // (self.clock.train_exp_counter + 1), self.cur_acts.size(0),
         )
 
+        # JA: Initialising replay buffer
+        # Use PyTorch GMM
+        # https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
         curr_data = self.experience.dataset
         idxs_cur = torch.randperm(self.cur_acts.size(0))[:h]
         rm_add_y = torch.tensor([curr_data.targets[idx_cur] for idx_cur in idxs_cur])
@@ -272,5 +150,5 @@ class LatentReplay(SupervisedTemplate):
 
         self.cur_acts = None
 
-        # Runs S.I. plugin callbacks
+        # Runs S.I. and CWR* plugin callbacks
         super()._after_training_exp(**kwargs)
