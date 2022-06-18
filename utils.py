@@ -52,3 +52,11 @@ def train_gmm(n_epochs, x):
         print(i, loss2)
 
     return None
+
+
+def get_device():
+    """
+    Returns:
+        torch.device: Torch device. First GPU if available, else CPU.
+    """
+    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
