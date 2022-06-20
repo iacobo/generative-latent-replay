@@ -36,10 +36,10 @@ class GMM(nn.Module):
         return gmm
 
 
-def train_gmm(n_epochs, x):
+def train_gmm(n_epochs, x, lr=0.001, momentum=0.9):
 
     parameters = [weights, means, stdevs]
-    optimizer1 = optim.SGD(parameters, lr=0.001, momentum=0.9)
+    optimizer1 = optim.SGD(parameters, lr=lr, momentum=momentum)
     gmm = GMM()
 
     for i in range(n_epochs):
