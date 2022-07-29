@@ -8,7 +8,9 @@ from torch.nn.modules.batchnorm import _NormBase
 from torch.optim import SGD
 from torch.utils.data import DataLoader
 
-from avalanche.models import MobilenetV1
+from nets import MobilenetV1
+
+# from avalanche.models import MobilenetV1
 from avalanche.models.batch_renorm import BatchRenorm2D
 from avalanche.training.plugins import (
     SupervisedPlugin,
@@ -42,6 +44,7 @@ class AR1(SupervisedTemplate):
 
     def __init__(
         self,
+        model=None,
         criterion=None,
         lr: float = 0.001,
         momentum=0.9,
@@ -112,7 +115,13 @@ class AR1(SupervisedTemplate):
             plugins = []
 
         # Model setup
-        model = MobilenetV1(pretrained=True, latent_layer_num=latent_layer_num)
+        model = MobilenetV1(
+            model=model,
+            pretrained=True,
+            n_classes=10,
+            latent_layer_num=latent_layer_num,
+            penultimate_layer_dim=64,
+        )
         replace_bn_with_brn(
             model,
             momentum=init_update_rate,
@@ -120,6 +129,8 @@ class AR1(SupervisedTemplate):
             max_r_max=max_r_max,
             max_d_max=max_d_max,
         )
+
+        print(model)
 
         fc_name, fc_layer = get_last_fc_layer(model)
 
