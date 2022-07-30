@@ -45,6 +45,7 @@ class AR1(SupervisedTemplate):
     def __init__(
         self,
         model=None,
+        penultimate_layer_dim=512,
         criterion=None,
         lr: float = 0.001,
         momentum=0.9,
@@ -120,7 +121,7 @@ class AR1(SupervisedTemplate):
             pretrained=True,
             n_classes=10,
             latent_layer_num=latent_layer_num,
-            penultimate_layer_dim=64,
+            penultimate_layer_dim=penultimate_layer_dim,
         )
         replace_bn_with_brn(
             model,

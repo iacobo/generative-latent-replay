@@ -60,7 +60,7 @@ class MobilenetV1(nn.Module):
         pretrained=True,
         latent_layer_num=20,
         n_classes=50,
-        penultimate_layer_dim=512,
+        penultimate_layer_dim=2048,
     ):
         super().__init__()
 
@@ -103,6 +103,33 @@ class MobilenetV1(nn.Module):
             return logits, orig_acts
         else:
             return logits
+
+
+class SimpleCNN(nn.Module):
+    """
+    Convolutional Neural Network
+    """
+
+    def __init__(self, num_classes=10):
+        super(SimpleCNN, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=1, padding=0),
+            nn.ReLU(inplace=True),
+            nn.AdaptiveMaxPool2d(1),
+            nn.Dropout(p=0.25),
+        )
+        self.classifier = nn.Sequential(nn.Linear(64, num_classes))
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
 
 
 if __name__ == "__main__":
