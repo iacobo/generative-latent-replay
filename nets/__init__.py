@@ -1,1 +1,1 @@
-from .mobilenetv1 import MobilenetV1, SimpleCNN
+from .mobilenetv1 import FrozenNet, SimpleCNN

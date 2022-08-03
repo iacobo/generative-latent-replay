@@ -50,9 +50,12 @@ def remove_DwsConvBlock(cur_layers):
     return all_layers
 
 
-class MobilenetV1(nn.Module):
-    """MobileNet v1 implementation. This model
-    can be instantiated from a pretrained network."""
+class FrozenNet(nn.Module):
+    """
+    Wrapper for pytorch models which splits layers into latent 
+    and end features. Used for freezing latent features during 
+    Latent Replay and related continual learning methods (e.g. AR1).
+    """
 
     def __init__(
         self,
@@ -134,6 +137,7 @@ class SimpleCNN(nn.Module):
 
 if __name__ == "__main__":
 
-    model = MobilenetV1(pretrained=True)
+    model = FrozenNet(pretrained=True)
+
     for name, param in model.named_parameters():
         print(name)

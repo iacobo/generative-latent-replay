@@ -8,7 +8,7 @@ from torch.nn.modules.batchnorm import _NormBase
 from torch.optim import SGD
 from torch.utils.data import DataLoader
 
-from nets import MobilenetV1
+from nets import FrozenNet
 
 # from avalanche.models import MobilenetV1
 from avalanche.models.batch_renorm import BatchRenorm2D
@@ -116,7 +116,7 @@ class AR1(SupervisedTemplate):
             plugins = []
 
         # Model setup
-        model = MobilenetV1(
+        model = FrozenNet(
             model=model,
             pretrained=True,
             n_classes=10,
