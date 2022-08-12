@@ -29,6 +29,9 @@ from avalanche.training.utils import (
 )
 from avalanche.training.plugins.evaluation import default_evaluator
 
+# JA
+from torchviz import make_dot
+
 
 class AR1(SupervisedTemplate):
     """AR1 with Latent Replay.
@@ -296,6 +299,27 @@ class AR1(SupervisedTemplate):
             # lat_mb_x will be None for the very first batch (batch 0), which
             # means that lat_acts.shape[0] == self.mb_x[0].
             self._before_forward(**kwargs)
+
+            # JA:
+            if mb_it == 0:
+                for name, param in self.model.named_parameters():
+                    print(name, param.size())
+
+                make_dot(
+                    self.model(self.mb_x, latent_input=lat_mb_x, return_lat_acts=True),
+                    params=dict(
+                        list(self.model.named_parameters())
+                        + [("mb_x", self.mb_x)]
+                        + (
+                            []
+                            if self.clock.train_exp_counter == 0
+                            else [("lat_mb_x", lat_mb_x)]
+                        )
+                    ),
+                ).render(
+                    f"torchviz_output_exp{self.clock.train_exp_counter}", format="png"
+                )
+
             self.mb_output, lat_acts = self.model(
                 self.mb_x, latent_input=lat_mb_x, return_lat_acts=True
             )

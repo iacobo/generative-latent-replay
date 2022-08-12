@@ -36,6 +36,13 @@ class GMM(nn.Module):
         return gmm
 
 
+def plot_random_example():
+    """Plots random examples from each class / dist.
+    """
+
+    return None
+
+
 def train_gmm(n_epochs, x, lr=0.001, momentum=0.9):
 
     parameters = [weights, means, stdevs]
