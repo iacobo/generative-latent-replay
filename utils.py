@@ -135,10 +135,11 @@ def freeze_up_to(
     to_freeze_layers = dict()
     print("FREEZE_UP_TO")
     for param_def in get_layers_and_params(model, prefix=module_prefix):
-        print(param_def.layer_name)
-        if (
-            freeze_until_layer is not None
-            and freeze_until_layer == param_def.layer_name
+        print(freeze_until_layer, param_def.layer_name, param_def.parameter_name)
+        if freeze_until_layer is not None and (
+            freeze_until_layer == param_def.layer_name
+            # JA: gets sent as tuple of single value for some reason?
+            or freeze_until_layer[0] == param_def.layer_name
         ):
             break
 

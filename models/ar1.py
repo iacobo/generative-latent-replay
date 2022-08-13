@@ -147,11 +147,6 @@ class AR1(SupervisedTemplate):
                 SynapticIntelligencePlugin(ewc_lambda, excluded_parameters=[fc_name])
             )
 
-        self.cwr_plugin = CWRStarPlugin(
-            model, cwr_layer_name=fc_name, freeze_remaining_model=False
-        )
-        plugins.append(self.cwr_plugin)
-
         optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
 
         if criterion is None:
@@ -231,15 +226,6 @@ class AR1(SupervisedTemplate):
         # super()... will run S.I. and CWR* plugin callbacks
         super()._before_training_exp(**kwargs)
 
-        # Update cur_j of CWR* to consider latent patterns
-        if self.clock.train_exp_counter > 0:
-            for class_id, count in examples_per_class(self.rm[1]).items():
-                self.model.cur_j[class_id] += count
-            self.cwr_plugin.cur_class = [
-                cls for cls in set(self.model.cur_j.keys()) if self.model.cur_j[cls] > 0
-            ]
-            self.cwr_plugin.reset_weights(self.cwr_plugin.cur_class)
-
     def make_train_dataloader(
         self, num_workers=0, shuffle=True, pin_memory=True, **kwargs
     ):
@@ -309,7 +295,7 @@ class AR1(SupervisedTemplate):
             self._before_forward(**kwargs)
 
             # JA:
-            if True and mb_it == 0:
+            if False and mb_it == 0:
                 print("MODEL.NAMED_PARAMETERS")
                 for name, param in self.model.named_parameters():
                     print(name, param.size())

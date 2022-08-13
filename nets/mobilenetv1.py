@@ -74,7 +74,7 @@ class FrozenNet(nn.Module):
 
         all_layers = []  # nn.ModuleList()
         remove_sequential(model, all_layers)
-        all_layers = remove_DwsConvBlock(all_layers)
+        # all_layers = remove_DwsConvBlock(all_layers)
 
         lat_list = []  # nn.ModuleList()
         end_list = []  # nn.ModuleList()
@@ -84,6 +84,10 @@ class FrozenNet(nn.Module):
                 lat_list.append(layer)
             else:
                 end_list.append(layer)
+
+        # JA
+        if not lat_list:
+            lat_list = [nn.Identity()]
 
         self.lat_features = nn.Sequential(*lat_list)
         self.end_features = nn.Sequential(*end_list)
@@ -167,8 +171,10 @@ class SimpleMLP(nn.Module, BaseModel):
 
         self.features = nn.Sequential()
 
-        for idx in range(hidden_layers + 1):
-            self.features.add_module(f"fc{idx}", nn.Linear(input_size, hidden_size))
+        for idx in range(hidden_layers):
+            cur_input_size = input_size if idx == 0 else hidden_size
+
+            self.features.add_module(f"fc{idx}", nn.Linear(cur_input_size, hidden_size))
             self.features.add_module(f"relu{idx}", nn.ReLU(inplace=False))
             self.features.add_module(f"drop{idx}", nn.Dropout(p=drop_rate))
 
