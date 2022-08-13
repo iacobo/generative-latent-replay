@@ -165,26 +165,13 @@ class SimpleMLP(nn.Module, BaseModel):
         """
         super().__init__()
 
-        layers = nn.Sequential(
-            *(
-                nn.Linear(input_size, hidden_size),
-                nn.ReLU(inplace=False),
-                nn.Dropout(p=drop_rate),
-            )
-        )
-        for layer_idx in range(hidden_layers - 1):
-            layers.add_module(
-                f"fc{layer_idx + 1}",
-                nn.Sequential(
-                    *(
-                        nn.Linear(hidden_size, hidden_size),
-                        nn.ReLU(inplace=False),
-                        nn.Dropout(p=drop_rate),
-                    )
-                ),
-            )
+        self.features = nn.Sequential()
 
-        self.features = nn.Sequential(*layers)
+        for idx in range(hidden_layers + 1):
+            self.features.add_module(f"fc{idx}", nn.Linear(input_size, hidden_size))
+            self.features.add_module(f"relu{idx}", nn.ReLU(inplace=False))
+            self.features.add_module(f"drop{idx}", nn.Dropout(p=drop_rate))
+
         self.classifier = nn.Linear(hidden_size, num_classes)
         self._input_size = input_size
 

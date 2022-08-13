@@ -22,7 +22,8 @@ from avalanche.training.templates.supervised import SupervisedTemplate
 from avalanche.training.utils import (
     replace_bn_with_brn,
     get_last_fc_layer,
-    freeze_up_to,
+    # freeze_up_to,
+    get_layers_and_params,
     change_brn_pars,
     examples_per_class,
     LayerAndParameter,
@@ -31,6 +32,7 @@ from avalanche.training.plugins.evaluation import default_evaluator
 
 # JA
 from torchviz import make_dot
+from utils import freeze_up_to
 
 
 class AR1(SupervisedTemplate):
@@ -196,11 +198,17 @@ class AR1(SupervisedTemplate):
 
             # "freeze_up_to" will freeze layers below "freeze_below_layer"
             # Beware that Batch ReNorm layers are not frozen!
-            freeze_up_to(
+            frozen_layers, frozen_parameters = freeze_up_to(
                 self.model,
                 freeze_until_layer=self.freeze_below_layer,
                 layer_filter=AR1.filter_bn_and_brn,
             )
+
+            # JA
+            print("OUTPUT OF FREEZE_UP_TO")
+            print(frozen_layers)
+            print("\n")
+            print(frozen_parameters)
 
             # Adapt the parameters of BatchReNorm layers
             change_brn_pars(
@@ -301,9 +309,16 @@ class AR1(SupervisedTemplate):
             self._before_forward(**kwargs)
 
             # JA:
-            if mb_it == 0:
+            if True and mb_it == 0:
+                print("MODEL.NAMED_PARAMETERS")
                 for name, param in self.model.named_parameters():
                     print(name, param.size())
+
+                print("\n-------\n")
+
+                print("GET_LAYERS_AND_PARAMS")
+                for param_def in get_layers_and_params(self.model, prefix=""):
+                    print(param_def.layer_name)
 
                 make_dot(
                     self.model(self.mb_x, latent_input=lat_mb_x, return_lat_acts=True),

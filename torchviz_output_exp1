@@ -1,8 +1,37 @@
 digraph {
 	graph [size="12,12"]
 	node [align=left fontname=monospace fontsize=10 height=0.2 ranksep=0.1 shape=box style=filled]
-	1597890823968 [label="
+	1877739899216 [label="
  (32, 10)" fillcolor=darkolivegreen1]
-	1597890824528 [label="
+	1877739985792 [label=MmBackward0]
+	1877739984304 -> 1877739985792
+	1877739984304 [label=ViewBackward0]
+	1877739986896 -> 1877739984304
+	1877739986896 [label=NativeDropoutBackward0]
+	1877739986752 -> 1877739986896
+	1877739986752 [label=ReluBackward0]
+	1877531373632 -> 1877739986752
+	1877531373632 [label=AddmmBackward0]
+	1877586306288 -> 1877531373632
+	1879032046352 [label="end_features.0.bias
+ (128)" fillcolor=lightblue]
+	1879032046352 -> 1877586306288
+	1877586306288 [label=AccumulateGrad]
+	1877531373824 -> 1877531373632
+	1877531373824 [label=TBackward0]
+	1877586306672 -> 1877531373824
+	1879032046752 [label="end_features.0.weight
+ (128, 128)" fillcolor=lightblue]
+	1879032046752 -> 1877586306672
+	1877586306672 [label=AccumulateGrad]
+	1877739986656 -> 1877739985792
+	1877739986656 [label=TBackward0]
+	1877586306144 -> 1877739986656
+	1877055503712 [label="output.weight
+ (10, 128)" fillcolor=lightblue]
+	1877055503712 -> 1877586306144
+	1877586306144 [label=AccumulateGrad]
+	1877739985792 -> 1877739899216
+	1877739898016 [label="
  (31, 128)" fillcolor=darkolivegreen1]
 }
