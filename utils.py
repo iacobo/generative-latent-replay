@@ -7,6 +7,24 @@ from typing import NamedTuple, List, Callable
 from torch import Tensor
 from torch.nn import Module
 
+import matplotlib.pyplot as plt
+
+
+def plot_single_legend(fig):
+    labels_handles = {
+        label: handle
+        for ax in fig.axes
+        for handle, label in zip(*ax.get_legend_handles_labels())
+    }
+
+    fig.legend(
+        labels_handles.values(),
+        labels_handles.keys(),
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0),
+        bbox_transform=plt.gcf().transFigure,
+    )
+
 
 class GMM(nn.Module):
     def __init__(self, n_components, dim, weights):
@@ -38,6 +56,28 @@ class GMM(nn.Module):
         gmm = D.MixtureSameFamily(mix, comp)
 
         return gmm
+
+
+def plot_results(results, method_name, ax, n_experiences, metric="acc", mode="train"):
+    results_clean = {"train": {"acc": [], "loss": []}, "test": {"acc": [], "loss": []}}
+    loss_prefix = f"Loss_Stream/eval_phase/{mode}_stream/"
+    acc_prefix = f"Top1_Acc_Stream/eval_phase/{mode}_stream/"
+
+    results_clean[mode]["loss"] = [
+        [result[f"{loss_prefix}Task{str(i).zfill(3)}"] for i in range(n_experiences)]
+        for result in results
+    ]
+    results_clean[mode]["acc"] = [
+        [result[f"{acc_prefix}Task{str(i).zfill(3)}"] for i in range(n_experiences)]
+        for result in results
+    ]
+
+    res = results_clean[mode][metric]
+
+    ax.plot(res, label=[f"Task {i}" for i in range(len(res))])
+    ax.set_title(f"{method_name} {mode.capitalize()} {metric.capitalize()}")
+
+    return results_clean
 
 
 def plot_random_example():
@@ -136,10 +176,9 @@ def freeze_up_to(
     print("FREEZE_UP_TO")
     for param_def in get_layers_and_params(model, prefix=module_prefix):
         print(freeze_until_layer, param_def.layer_name, param_def.parameter_name)
-        if freeze_until_layer is not None and (
-            freeze_until_layer == param_def.layer_name
-            # JA: gets sent as tuple of single value for some reason?
-            or freeze_until_layer[0] == param_def.layer_name
+        if (
+            freeze_until_layer is not None
+            and freeze_until_layer == param_def.layer_name
         ):
             break
 
