@@ -7,23 +7,8 @@ from typing import NamedTuple, List, Callable
 from torch import Tensor
 from torch.nn import Module
 
+import numpy as np
 import matplotlib.pyplot as plt
-
-
-def plot_single_legend(fig):
-    labels_handles = {
-        label: handle
-        for ax in fig.axes
-        for handle, label in zip(*ax.get_legend_handles_labels())
-    }
-
-    fig.legend(
-        labels_handles.values(),
-        labels_handles.keys(),
-        loc="upper center",
-        bbox_to_anchor=(0.5, 0),
-        bbox_transform=plt.gcf().transFigure,
-    )
 
 
 class GMM(nn.Module):
@@ -58,26 +43,55 @@ class GMM(nn.Module):
         return gmm
 
 
-def plot_results(results, method_name, ax, n_experiences, metric="acc", mode="train"):
+def plot_results(
+    results,
+    method_name,
+    ax,
+    n_experiences,
+    metric="acc",
+    mode="train",
+    repeat_vals=True,
+):
     results_clean = {"train": {"acc": [], "loss": []}, "test": {"acc": [], "loss": []}}
     loss_prefix = f"Loss_Stream/eval_phase/{mode}_stream/"
     acc_prefix = f"Top1_Acc_Stream/eval_phase/{mode}_stream/"
 
     results_clean[mode]["loss"] = [
-        [result[f"{loss_prefix}Task{str(i).zfill(3)}"] for i in range(n_experiences)]
-        for result in results
+        [result[f"{loss_prefix}Task{str(i).zfill(3)}"] for result in results]
+        for i in range(n_experiences)
     ]
     results_clean[mode]["acc"] = [
-        [result[f"{acc_prefix}Task{str(i).zfill(3)}"] for i in range(n_experiences)]
-        for result in results
+        [result[f"{acc_prefix}Task{str(i).zfill(3)}"] for result in results]
+        for i in range(n_experiences)
     ]
 
     res = results_clean[mode][metric]
 
-    ax.plot(res, label=[f"Task {i}" for i in range(len(res))])
+    if repeat_vals:
+        res = [list(np.repeat(val, 2)) for val in res]
+
+    for i in range(n_experiences):
+        ax.plot(res[i], label=f"Task {i}")
+
     ax.set_title(f"{method_name} {mode.capitalize()} {metric.capitalize()}")
 
     return results_clean
+
+
+def plot_single_legend(fig):
+    labels_handles = {
+        label: handle
+        for ax in fig.axes
+        for handle, label in zip(*ax.get_legend_handles_labels())
+    }
+
+    fig.legend(
+        labels_handles.values(),
+        labels_handles.keys(),
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0),
+        bbox_transform=plt.gcf().transFigure,
+    )
 
 
 def plot_random_example():

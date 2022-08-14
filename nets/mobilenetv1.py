@@ -16,9 +16,6 @@ This is the definition od the Mid-caffenet high resolution in Pythorch
 import torch.nn as nn
 import torch
 
-from torchvision.models.mobilenet import mobilenet_v2
-from pytorchcv.models.mobilenet import mobilenet_w1
-
 from avalanche.models.base_model import BaseModel
 
 try:
@@ -61,7 +58,7 @@ class FrozenNet(nn.Module):
 
     def __init__(
         self,
-        model=mobilenet_w1,
+        model,
         pretrained=True,
         latent_layer_num=20,
         n_classes=50,
@@ -69,25 +66,18 @@ class FrozenNet(nn.Module):
     ):
         super().__init__()
 
-        # model = model(pretrained=pretrained)  # mobilenet_w1(pretrained=pretrained)
-        # model.features.final_pool = nn.AvgPool2d(4)
-
-        all_layers = []  # nn.ModuleList()
+        all_layers = nn.ModuleList()
         remove_sequential(model, all_layers)
         # all_layers = remove_DwsConvBlock(all_layers)
 
-        lat_list = []  # nn.ModuleList()
-        end_list = []  # nn.ModuleList()
+        lat_list = nn.ModuleList()
+        end_list = nn.ModuleList()
 
         for i, layer in enumerate(all_layers[:-1]):
             if i <= latent_layer_num:
                 lat_list.append(layer)
             else:
                 end_list.append(layer)
-
-        # JA
-        if not lat_list:
-            lat_list = [nn.Identity()]
 
         self.lat_features = nn.Sequential(*lat_list)
         self.end_features = nn.Sequential(*end_list)
@@ -96,13 +86,13 @@ class FrozenNet(nn.Module):
 
     def forward(self, x, latent_input=None, return_lat_acts=False):
 
-        if latent_input is not None:
+        if latent_input is None:
+            orig_acts = self.lat_features(x)
+            lat_acts = orig_acts
+        else:
             with torch.no_grad():
                 orig_acts = self.lat_features(x)
             lat_acts = torch.cat((orig_acts, latent_input), 0)
-        else:
-            orig_acts = self.lat_features(x)
-            lat_acts = orig_acts
 
         x = self.end_features(lat_acts)
         x = x.view(x.size(0), -1)

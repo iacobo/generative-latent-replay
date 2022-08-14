@@ -51,6 +51,7 @@ class AR1(SupervisedTemplate):
         self,
         model=None,
         penultimate_layer_dim=512,
+        n_classes=10,
         criterion=None,
         lr: float = 0.001,
         momentum=0.9,
@@ -124,7 +125,7 @@ class AR1(SupervisedTemplate):
         model = FrozenNet(
             model=model,
             pretrained=True,
-            n_classes=10,
+            n_classes=n_classes,
             latent_layer_num=latent_layer_num,
             penultimate_layer_dim=penultimate_layer_dim,
         )
@@ -253,6 +254,7 @@ class AR1(SupervisedTemplate):
         current_batch_mb_size = self.train_mb_size
 
         if self.clock.train_exp_counter > 0:
+            # JA: shouldn't this be train_patterns = len(self.current_experience)?
             train_patterns = len(self.adapted_dataset)
             current_batch_mb_size = train_patterns // (
                 (train_patterns + self.rm_sz) // self.train_mb_size
@@ -260,6 +262,10 @@ class AR1(SupervisedTemplate):
 
         current_batch_mb_size = max(1, current_batch_mb_size)
         self.replay_mb_size = max(0, self.train_mb_size - current_batch_mb_size)
+
+        if self.clock.train_exp_counter > 0:
+            print(f"Replay mb size: {self.replay_mb_size}")
+            print(train_patterns, self.rm_sz, self.train_mb_size, current_batch_mb_size)
 
         # AR1 only supports SIT scenarios (no task labels).
         self.dataloader = DataLoader(
