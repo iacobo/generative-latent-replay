@@ -265,7 +265,11 @@ class AR1(SupervisedTemplate):
 
         if self.clock.train_exp_counter > 0:
             print(f"Replay mb size: {self.replay_mb_size}")
-            print(train_patterns, self.rm_sz, self.train_mb_size, current_batch_mb_size)
+            print(f"Current mb size: {current_batch_mb_size}")
+            for i in range(3):
+                print(
+                    f"Data counts: {self.adapted_dataset.targets_task_labels.count(i)}"
+                )
 
         # AR1 only supports SIT scenarios (no task labels).
         self.dataloader = DataLoader(

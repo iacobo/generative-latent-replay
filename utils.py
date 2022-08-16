@@ -50,7 +50,7 @@ def plot_results(
     n_experiences,
     metric="acc",
     mode="train",
-    repeat_vals=True,
+    repeat_vals=False,
 ):
     results_clean = {"train": {"acc": [], "loss": []}, "test": {"acc": [], "loss": []}}
     loss_prefix = f"Loss_Stream/eval_phase/{mode}_stream/"
@@ -68,7 +68,7 @@ def plot_results(
     res = results_clean[mode][metric]
 
     if repeat_vals:
-        res = [list(np.repeat(val, 2)) for val in res]
+        res = [list(np.repeat(val, repeat_vals)) for val in res]
 
     for i in range(n_experiences):
         ax.plot(res[i], label=f"Task {i}")
