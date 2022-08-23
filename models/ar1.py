@@ -254,7 +254,6 @@ class AR1(SupervisedTemplate):
         current_batch_mb_size = self.train_mb_size
 
         if self.clock.train_exp_counter > 0:
-            # JA: shouldn't this be train_patterns = len(self.current_experience)?
             train_patterns = len(self.adapted_dataset)
             current_batch_mb_size = train_patterns // (
                 (train_patterns + self.rm_sz) // self.train_mb_size
@@ -263,13 +262,10 @@ class AR1(SupervisedTemplate):
         current_batch_mb_size = max(1, current_batch_mb_size)
         self.replay_mb_size = max(0, self.train_mb_size - current_batch_mb_size)
 
+        # JA
         if self.clock.train_exp_counter > 0:
             print(f"Replay mb size: {self.replay_mb_size}")
             print(f"Current mb size: {current_batch_mb_size}")
-            for i in range(3):
-                print(
-                    f"Data counts: {self.adapted_dataset.targets_task_labels.count(i)}"
-                )
 
         # AR1 only supports SIT scenarios (no task labels).
         self.dataloader = DataLoader(
@@ -384,7 +380,7 @@ class AR1(SupervisedTemplate):
         self.cur_acts = None
 
         # Runs S.I. and CWR* plugin callbacks
-        super()._after_training_exp(**kwargs)
+        # super()._after_training_exp(**kwargs)
 
     @staticmethod
     def filter_bn_and_brn(param_def: LayerAndParameter):
