@@ -157,6 +157,7 @@ class AR1(SupervisedTemplate):
         self.l2 = l2
         self.rm = None
         self.cur_acts: Optional[Tensor] = None
+        self.cur_y: Optional[Tensor] = None
         self.replay_mb_size = 0
 
         super().__init__(
@@ -330,8 +331,10 @@ class AR1(SupervisedTemplate):
                 lat_acts = lat_acts.detach().clone().cpu()
                 if mb_it == 0:
                     self.cur_acts = lat_acts
+                    self.cur_y = self.mb_y
                 else:
                     self.cur_acts = torch.cat((self.cur_acts, lat_acts), 0)
+                    self.cur_y = torch.cat((self.cur_y, self.mb_y), 0)
             self._after_forward(**kwargs)
 
             # Loss & Backward
@@ -354,11 +357,8 @@ class AR1(SupervisedTemplate):
             self.rm_sz // (self.clock.train_exp_counter + 1), self.cur_acts.size(0),
         )
 
-        curr_data = self.experience.dataset
         idxs_cur = torch.randperm(self.cur_acts.size(0))[:h]
-        rm_add_y = torch.tensor([curr_data.targets[idx_cur] for idx_cur in idxs_cur])
-
-        rm_add = [self.cur_acts[idxs_cur], rm_add_y]
+        rm_add = [self.cur_acts[idxs_cur], self.cur_y[idxs_cur]]
 
         # replace patterns in random memory
         if self.clock.train_exp_counter == 0:

@@ -71,17 +71,17 @@ class FrozenNet(nn.Module):
     def forward(self, x, latent_input=None, return_lat_acts=False):
 
         if latent_input is None:
-            orig_acts = self.lat_features(x)
-            lat_acts = orig_acts
+            lat_acts = self.lat_features(x)
+            full_acts = lat_acts
         else:
             with torch.no_grad():
-                orig_acts = self.lat_features(x)
-            lat_acts = torch.cat((orig_acts, latent_input), 0)
+                lat_acts = self.lat_features(x)
+            full_acts = torch.cat((lat_acts, latent_input), 0)
 
-        logits = self.end_features(lat_acts)
+        logits = self.end_features(full_acts)
 
         if return_lat_acts:
-            return logits, orig_acts
+            return logits, lat_acts
         else:
             return logits
 
