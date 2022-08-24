@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, Sequence, List
+from typing import Optional, List
 
 import torch
 from torch import Tensor
@@ -16,7 +16,6 @@ from avalanche.training.plugins import (
     SupervisedPlugin,
     EvaluationPlugin,
     SynapticIntelligencePlugin,
-    CWRStarPlugin,
 )
 from avalanche.training.templates.supervised import SupervisedTemplate
 from avalanche.training.utils import (
@@ -25,7 +24,6 @@ from avalanche.training.utils import (
     freeze_up_to,
     get_layers_and_params,
     change_brn_pars,
-    examples_per_class,
     LayerAndParameter,
 )
 from avalanche.training.plugins.evaluation import default_evaluator
@@ -36,8 +34,8 @@ from torchviz import make_dot
 # from utils import freeze_up_to
 
 
-class AR1(SupervisedTemplate):
-    """AR1 with Latent Replay.
+class LatentReplay(SupervisedTemplate):
+    """Latent Replay.
 
     This implementations allows for the use of both Synaptic Intelligence and
     Latent Replay to protect the lower level of the model from forgetting.
@@ -62,7 +60,7 @@ class AR1(SupervisedTemplate):
         max_d_max=0.5,
         inc_step=4.1e-05,
         rm_sz: int = 1500,
-        freeze_below_layer: str = "lat_features.19.bn.beta",
+        freeze_below_layer: str = "end_features.0",
         latent_layer_num: int = 19,
         ewc_lambda: float = 0,
         train_mb_size: int = 128,
@@ -73,7 +71,7 @@ class AR1(SupervisedTemplate):
         eval_every=-1,
     ):
         """
-        Creates an instance of the AR1 strategy.
+        Creates an instance of the LatentReplay strategy.
 
         :param criterion: The loss criterion to use. Defaults to None, in which
             case the cross entropy loss is used.
@@ -112,7 +110,7 @@ class AR1(SupervisedTemplate):
         """
 
         warnings.warn(
-            "The AR1 strategy implementation is in an alpha stage "
+            "The LatentReplay strategy implementation is in an alpha stage "
             "and is not perfectly aligned with the paper "
             "implementation. Please use at your own risk!"
         )
@@ -192,7 +190,7 @@ class AR1(SupervisedTemplate):
             frozen_layers, frozen_parameters = freeze_up_to(
                 self.model,
                 freeze_until_layer=self.freeze_below_layer,
-                layer_filter=AR1.filter_bn_and_brn,
+                layer_filter=LatentReplay.filter_bn_and_brn,
             )
 
             # JA: WHY ISN'T THIS PRINTING ANYMORE???????!!!
@@ -269,6 +267,12 @@ class AR1(SupervisedTemplate):
             shuffle=shuffle,
             pin_memory=pin_memory,
         )
+
+    # JA: See here for implementing custom loss function:
+    # https://github.com/ContinualAI/avalanche/pull/604
+    #
+    # For sampled latent replays, define sampling
+    # here (i.e. self.rm[0] = sampled x, self.rm[1] = sampled y)
 
     def training_epoch(self, **kwargs):
         for mb_it, self.mbatch in enumerate(self.dataloader):
@@ -357,18 +361,24 @@ class AR1(SupervisedTemplate):
             self.rm_sz // (self.clock.train_exp_counter + 1), self.cur_acts.size(0),
         )
 
+        # JA: Initialising replay buffer
+        # Use PyTorch GMM
+        # https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
         idxs_cur = torch.randperm(self.cur_acts.size(0))[:h]
         rm_add = [self.cur_acts[idxs_cur], self.cur_y[idxs_cur]]
+
+        print("Experience:", self.clock.train_exp_counter)
+        print("Current replay cache:", self.cur_acts.size(0))
+        print("Subset of cache to add:", h)
 
         # replace patterns in random memory
         if self.clock.train_exp_counter == 0:
             self.rm = rm_add
         else:
-            idxs_2_replace = torch.randperm(self.rm[0].size(0))[:h]
-            for j, idx in enumerate(idxs_2_replace):
-                idx = int(idx)
-                self.rm[0][idx] = rm_add[0][j]
-                self.rm[1][idx] = rm_add[1][j]
+            idxs_2_replace = torch.randperm(self.rm_sz)[:h]
+
+            self.rm[0][idxs_2_replace] = rm_add[0]
+            self.rm[1][idxs_2_replace] = rm_add[1]
 
         self.cur_acts = None
 
