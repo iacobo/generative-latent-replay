@@ -1,1 +1,1 @@
-from .mobilenetv1 import FrozenNet, SimpleMLP, SimpleCNN
+from .nets import FrozenNet, SimpleMLP, SimpleCNN

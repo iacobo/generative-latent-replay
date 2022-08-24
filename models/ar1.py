@@ -22,7 +22,7 @@ from avalanche.training.templates.supervised import SupervisedTemplate
 from avalanche.training.utils import (
     replace_bn_with_brn,
     get_last_fc_layer,
-    # freeze_up_to,
+    freeze_up_to,
     get_layers_and_params,
     change_brn_pars,
     examples_per_class,
@@ -32,7 +32,8 @@ from avalanche.training.plugins.evaluation import default_evaluator
 
 # JA
 from torchviz import make_dot
-from utils import freeze_up_to
+
+# from utils import freeze_up_to
 
 
 class AR1(SupervisedTemplate):
@@ -50,8 +51,6 @@ class AR1(SupervisedTemplate):
     def __init__(
         self,
         model=None,
-        penultimate_layer_dim=512,
-        n_classes=10,
         criterion=None,
         lr: float = 0.001,
         momentum=0.9,
@@ -122,13 +121,7 @@ class AR1(SupervisedTemplate):
             plugins = []
 
         # Model setup
-        model = FrozenNet(
-            model=model,
-            pretrained=True,
-            n_classes=n_classes,
-            latent_layer_num=latent_layer_num,
-            penultimate_layer_dim=penultimate_layer_dim,
-        )
+        model = FrozenNet(model=model, latent_layer_num=latent_layer_num,)
         replace_bn_with_brn(
             model,
             momentum=init_update_rate,
@@ -181,8 +174,9 @@ class AR1(SupervisedTemplate):
 
     def _before_training_exp(self, **kwargs):
         self.model.eval()
+        self.model.lat_features.eval()
         self.model.end_features.train()
-        self.model.output.train()
+        # self.model.output.train()
 
         if self.clock.train_exp_counter > 0:
             # In AR1 batch 0 is treated differently as the feature extractor is
@@ -200,10 +194,9 @@ class AR1(SupervisedTemplate):
                 layer_filter=AR1.filter_bn_and_brn,
             )
 
-            # JA
+            # JA: WHY ISN'T THIS PRINTING ANYMORE???????!!!
             print("OUTPUT OF FREEZE_UP_TO")
             print(frozen_layers)
-            print("\n")
             print(frozen_parameters)
 
             # Adapt the parameters of BatchReNorm layers
@@ -380,7 +373,7 @@ class AR1(SupervisedTemplate):
         self.cur_acts = None
 
         # Runs S.I. and CWR* plugin callbacks
-        # super()._after_training_exp(**kwargs)
+        super()._after_training_exp(**kwargs)
 
     @staticmethod
     def filter_bn_and_brn(param_def: LayerAndParameter):

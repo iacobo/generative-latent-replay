@@ -57,12 +57,7 @@ class FrozenNet(nn.Module):
     """
 
     def __init__(
-        self,
-        model,
-        pretrained=True,
-        latent_layer_num=20,
-        n_classes=50,
-        penultimate_layer_dim=2048,
+        self, model, latent_layer_num,
     ):
         super().__init__()
 
@@ -70,19 +65,8 @@ class FrozenNet(nn.Module):
         remove_sequential(model, all_layers)
         # all_layers = remove_DwsConvBlock(all_layers)
 
-        lat_list = nn.ModuleList()
-        end_list = nn.ModuleList()
-
-        for i, layer in enumerate(all_layers[:-1]):
-            if i <= latent_layer_num:
-                lat_list.append(layer)
-            else:
-                end_list.append(layer)
-
-        self.lat_features = nn.Sequential(*lat_list)
-        self.end_features = nn.Sequential(*end_list)
-
-        self.output = nn.Linear(penultimate_layer_dim, n_classes, bias=False)
+        self.lat_features = nn.Sequential(*all_layers[:latent_layer_num])
+        self.end_features = nn.Sequential(*all_layers[latent_layer_num:])
 
     def forward(self, x, latent_input=None, return_lat_acts=False):
 
@@ -94,9 +78,7 @@ class FrozenNet(nn.Module):
                 orig_acts = self.lat_features(x)
             lat_acts = torch.cat((orig_acts, latent_input), 0)
 
-        x = self.end_features(lat_acts)
-        x = x.view(x.size(0), -1)
-        logits = self.output(x)
+        logits = self.end_features(lat_acts)
 
         if return_lat_acts:
             return logits, orig_acts
@@ -173,14 +155,14 @@ class SimpleMLP(nn.Module, BaseModel):
 
     def forward(self, x):
         x = x.contiguous()
-        x = x.view(x.size(0), self._input_size)
+        x = x.flatten(start_dim=1)
         x = self.features(x)
         x = self.classifier(x)
         return x
 
     def get_features(self, x):
         x = x.contiguous()
-        x = x.view(x.size(0), self._input_size)
+        x = x.flatten(start_dim=1)
         x = self.features(x)
         return x
 
