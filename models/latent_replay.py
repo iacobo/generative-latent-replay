@@ -278,17 +278,15 @@ class LatentReplay(SupervisedTemplate):
         for mb_it, self.mbatch in enumerate(self.dataloader):
             self._unpack_minibatch()
             self._before_training_iteration(**kwargs)
-
             self.optimizer.zero_grad()
+
             if self.clock.train_exp_counter > 0:
-                lat_mb_x = self.rm[0][
-                    mb_it * self.replay_mb_size : (mb_it + 1) * self.replay_mb_size
-                ]
-                lat_mb_x = lat_mb_x.to(self.device)
-                lat_mb_y = self.rm[1][
-                    mb_it * self.replay_mb_size : (mb_it + 1) * self.replay_mb_size
-                ]
-                lat_mb_y = lat_mb_y.to(self.device)
+                start = self.replay_mb_size * mb_it
+                end = self.replay_mb_size * (mb_it + 1)
+
+                lat_mb_x = self.rm[0][start:end].to(self.device)
+                lat_mb_y = self.rm[1][start:end].to(self.device)
+
                 self.mbatch[1] = torch.cat((self.mb_y, lat_mb_y), 0)
             else:
                 lat_mb_x = None

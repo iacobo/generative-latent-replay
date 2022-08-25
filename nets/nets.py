@@ -68,14 +68,14 @@ class FrozenNet(nn.Module):
         self.lat_features = nn.Sequential(*all_layers[:latent_layer_num])
         self.end_features = nn.Sequential(*all_layers[latent_layer_num:])
 
-    def forward(self, x, latent_input=None, return_lat_acts=False):
+    def forward(self, raw_input, latent_input=None, return_lat_acts=False):
 
         if latent_input is None:
-            lat_acts = self.lat_features(x)
+            lat_acts = self.lat_features(raw_input)
             full_acts = lat_acts
         else:
             with torch.no_grad():
-                lat_acts = self.lat_features(x)
+                lat_acts = self.lat_features(raw_input)
             full_acts = torch.cat((lat_acts, latent_input), 0)
 
         logits = self.end_features(full_acts)
