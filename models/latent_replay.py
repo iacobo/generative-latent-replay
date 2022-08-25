@@ -4,32 +4,17 @@ from typing import Optional, List
 import torch
 from torch import Tensor
 from torch.nn import CrossEntropyLoss
-from torch.nn.modules.batchnorm import _NormBase
 from torch.optim import SGD
 from torch.utils.data import DataLoader
 
 from nets import FrozenNet
-
-# from avalanche.models import MobilenetV1
-from avalanche.models.batch_renorm import BatchRenorm2D
 from avalanche.training.plugins import (
     SupervisedPlugin,
     EvaluationPlugin,
-    SynapticIntelligencePlugin,
 )
-from avalanche.training.templates.supervised import SupervisedTemplate
-from avalanche.training.utils import (
-    replace_bn_with_brn,
-    get_last_fc_layer,
-    freeze_up_to,
-    get_layers_and_params,
-    change_brn_pars,
-    LayerAndParameter,
-)
+from avalanche.training.utils import freeze_up_to
 from avalanche.training.plugins.evaluation import default_evaluator
-
-# JA
-from torchviz import make_dot
+from avalanche.training.templates.supervised import SupervisedTemplate
 
 # from utils import freeze_up_to
 
@@ -37,13 +22,8 @@ from torchviz import make_dot
 class LatentReplay(SupervisedTemplate):
     """Latent Replay.
 
-    This implementations allows for the use of both Synaptic Intelligence and
-    Latent Replay to protect the lower level of the model from forgetting.
-
-    While the original papers show how to use those two techniques in a mutual
-    exclusive way, this implementation allows for the use of both of them
-    concurrently. This behaviour is controlled by passing proper constructor
-    arguments).
+    This implementations allows for the use of Latent Replay to protect the 
+    lower level of the model from forgetting.
     """
 
     def __init__(
@@ -54,15 +34,9 @@ class LatentReplay(SupervisedTemplate):
         momentum=0.9,
         l2=0.0005,
         train_epochs: int = 4,
-        init_update_rate: float = 0.01,
-        inc_update_rate=0.00005,
-        max_r_max=1.25,
-        max_d_max=0.5,
-        inc_step=4.1e-05,
         rm_sz: int = 1500,
         freeze_below_layer: str = "end_features.0",
         latent_layer_num: int = 19,
-        ewc_lambda: float = 0,
         train_mb_size: int = 128,
         eval_mb_size: int = 128,
         device=None,
@@ -79,13 +53,6 @@ class LatentReplay(SupervisedTemplate):
         :param momentum: The momentum (SGD optimizer).
         :param l2: The L2 penalty used for weight decay.
         :param train_epochs: The number of training epochs. Defaults to 4.
-        :param init_update_rate: The initial update rate of BatchReNorm layers.
-        :param inc_update_rate: The incremental update rate of BatchReNorm
-            layers.
-        :param max_r_max: The maximum r value of BatchReNorm layers.
-        :param max_d_max: The maximum d value of BatchReNorm layers.
-        :param inc_step: The incremental step of r and d values of BatchReNorm
-            layers.
         :param rm_sz: The size of the replay buffer. The replay buffer is shared
             across classes. Defaults to 1500.
         :param freeze_below_layer: A string describing the name of the layer
@@ -93,9 +60,6 @@ class LatentReplay(SupervisedTemplate):
             model. The given layer is not frozen (exclusive).
         :param latent_layer_num: The number of the layer to use as the Latent
             Replay Layer. Usually this is the same of `freeze_below_layer`.
-        :param ewc_lambda: The Synaptic Intelligence lambda term. Defaults to
-            0, which means that the Synaptic Intelligence regularization
-            will not be applied.
         :param train_mb_size: The train minibatch size. Defaults to 128.
         :param eval_mb_size: The eval minibatch size. Defaults to 128.
         :param device: The device to use. Defaults to None (cpu).
@@ -120,36 +84,16 @@ class LatentReplay(SupervisedTemplate):
 
         # Model setup
         model = FrozenNet(model=model, latent_layer_num=latent_layer_num,)
-        replace_bn_with_brn(
-            model,
-            momentum=init_update_rate,
-            r_d_max_inc_step=inc_step,
-            max_r_max=max_r_max,
-            max_d_max=max_d_max,
-        )
 
         print(model)
-
-        fc_name, fc_layer = get_last_fc_layer(model)
-
-        if ewc_lambda != 0:
-            # Synaptic Intelligence is not applied to the last fully
-            # connected layer (and implicitly to "freeze below" ones.
-            plugins.append(
-                SynapticIntelligencePlugin(ewc_lambda, excluded_parameters=[fc_name])
-            )
 
         optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
 
         if criterion is None:
             criterion = CrossEntropyLoss()
 
-        self.ewc_lambda = ewc_lambda
         self.freeze_below_layer = freeze_below_layer
         self.rm_sz = rm_sz
-        self.inc_update_rate = inc_update_rate
-        self.max_r_max = max_r_max
-        self.max_d_max = max_d_max
         self.lr = lr
         self.momentum = momentum
         self.l2 = l2
@@ -178,33 +122,18 @@ class LatentReplay(SupervisedTemplate):
         # self.model.output.train()
 
         if self.clock.train_exp_counter > 0:
-            # In AR1 batch 0 is treated differently as the feature extractor is
-            # left more free to learn.
-            # This if is executed for batch > 0, in which we freeze layers
-            # below "self.freeze_below_layer" (which usually is the latent
-            # replay layer!) and we also change the parameters of BatchReNorm
-            # layers to a more conservative configuration.
+            # In Latent Replay batch 0 is treated differently as the feature extractor is left more free to learn.
+            # This is executed for experience > 0, in which we freeze layers
+            # below "self.freeze_below_layer" (which usually is the latent replay layer!).
 
             # "freeze_up_to" will freeze layers below "freeze_below_layer"
-            # Beware that Batch ReNorm layers are not frozen!
             frozen_layers, frozen_parameters = freeze_up_to(
-                self.model,
-                freeze_until_layer=self.freeze_below_layer,
-                layer_filter=LatentReplay.filter_bn_and_brn,
+                self.model, freeze_until_layer=self.freeze_below_layer,
             )
 
             # JA:
             print("OUTPUT OF FREEZE_UP_TO")
             print(frozen_layers, frozen_parameters)
-
-            # Adapt the parameters of BatchReNorm layers
-            change_brn_pars(
-                self.model,
-                momentum=self.inc_update_rate,
-                r_d_max_inc_step=0,
-                r_max=self.max_r_max,
-                d_max=self.max_d_max,
-            )
 
             # Adapt the model and optimizer
             self.model = self.model.to(self.device)
@@ -297,29 +226,8 @@ class LatentReplay(SupervisedTemplate):
 
             # JA:
             if False and mb_it == 0:
-                print("MODEL.NAMED_PARAMETERS")
-                for name, param in self.model.named_parameters():
-                    print(name, param.size())
-
-                print("\n-------\n")
-
-                print("GET_LAYERS_AND_PARAMS")
-                for param_def in get_layers_and_params(self.model, prefix=""):
-                    print(param_def.layer_name)
-
-                make_dot(
-                    self.model(self.mb_x, latent_input=lat_mb_x, return_lat_acts=True),
-                    params=dict(
-                        list(self.model.named_parameters())
-                        + [("mb_x", self.mb_x)]
-                        + (
-                            []
-                            if self.clock.train_exp_counter == 0
-                            else [("lat_mb_x", lat_mb_x)]
-                        )
-                    ),
-                ).render(
-                    f"torchviz_output_exp{self.clock.train_exp_counter}", format="png"
+                utils.render_model(
+                    lat_mb_x, self.model, self.mb_x, self.clock.train_exp_counter
                 )
 
             self.mb_output, lat_acts = self.model(
@@ -372,16 +280,12 @@ class LatentReplay(SupervisedTemplate):
         if self.clock.train_exp_counter == 0:
             self.rm = rm_add
         else:
-            idxs_2_replace = torch.randperm(self.rm_sz)[:h]
+            idxs_to_replace = torch.randperm(self.rm_sz)[:h]
 
-            self.rm[0][idxs_2_replace] = rm_add[0]
-            self.rm[1][idxs_2_replace] = rm_add[1]
+            self.rm[0][idxs_to_replace] = rm_add[0]
+            self.rm[1][idxs_to_replace] = rm_add[1]
 
         self.cur_acts = None
 
         # Runs S.I. and CWR* plugin callbacks
         super()._after_training_exp(**kwargs)
-
-    @staticmethod
-    def filter_bn_and_brn(param_def: LayerAndParameter):
-        return not isinstance(param_def.layer, (_NormBase, BatchRenorm2D))
