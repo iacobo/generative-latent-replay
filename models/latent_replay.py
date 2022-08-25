@@ -193,10 +193,9 @@ class LatentReplay(SupervisedTemplate):
                 layer_filter=LatentReplay.filter_bn_and_brn,
             )
 
-            # JA: WHY ISN'T THIS PRINTING ANYMORE???????!!!
+            # JA:
             print("OUTPUT OF FREEZE_UP_TO")
-            print(frozen_layers)
-            print(frozen_parameters)
+            print(frozen_layers, frozen_parameters)
 
             # Adapt the parameters of BatchReNorm layers
             change_brn_pars(
