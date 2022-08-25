@@ -84,7 +84,6 @@ class LatentReplay(SupervisedTemplate):
 
         # Model setup
         model = FrozenNet(model=model, latent_layer_num=latent_layer_num,)
-
         print(model)
 
         optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
@@ -116,10 +115,8 @@ class LatentReplay(SupervisedTemplate):
         )
 
     def _before_training_exp(self, **kwargs):
-        self.model.eval()
+        self.model.train()
         self.model.lat_features.eval()
-        self.model.end_features.train()
-        # self.model.output.train()
 
         if self.clock.train_exp_counter > 0:
             # In Latent Replay batch 0 is treated differently as the feature extractor is left more free to learn.
@@ -271,10 +268,6 @@ class LatentReplay(SupervisedTemplate):
         # https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
         idxs_cur = torch.randperm(self.cur_acts.size(0))[:h]
         rm_add = [self.cur_acts[idxs_cur], self.cur_y[idxs_cur]]
-
-        print("Experience:", self.clock.train_exp_counter)
-        print("Current replay cache:", self.cur_acts.size(0))
-        print("Subset of cache to add:", h)
 
         # replace patterns in random memory
         if self.clock.train_exp_counter == 0:
