@@ -124,7 +124,7 @@ class LatentReplay(SupervisedTemplate):
             # below "self.freeze_below_layer" (which usually is the latent replay layer!).
 
             # "freeze_up_to" will freeze layers below "freeze_below_layer"
-            frozen_layers, frozen_parameters = freeze_up_to(
+            freeze_up_to(
                 self.model,
                 freeze_until_layer=self.freeze_below_layer,
             )
@@ -197,6 +197,9 @@ class LatentReplay(SupervisedTemplate):
             self._before_training_iteration(**kwargs)
             self.optimizer.zero_grad()
 
+            # Grab y labels for the current minibatch
+            cur_y = self.mb_y.detach().clone().cpu()
+
             if self.clock.train_exp_counter > 0:
                 start = self.replay_mb_size * mb_it
                 end = self.replay_mb_size * (mb_it + 1)
@@ -204,6 +207,7 @@ class LatentReplay(SupervisedTemplate):
                 lat_mb_x = self.rm[0][start:end].to(self.device)
                 lat_mb_y = self.rm[1][start:end].to(self.device)
 
+                # Set current y_labels to current minibatch plus replayed examples
                 self.mbatch[1] = torch.cat((self.mb_y, lat_mb_y), 0)
             else:
                 lat_mb_x = None
@@ -227,7 +231,6 @@ class LatentReplay(SupervisedTemplate):
                 # On the first epoch only: store latent activations. Those
                 # activations will be used to update the replay buffer.
                 lat_acts = lat_acts.detach().clone().cpu()
-                cur_y = self.mb_y.detach().clone().cpu()
 
                 if mb_it == 0:
                     self.cur_acts = lat_acts
@@ -270,8 +273,6 @@ class LatentReplay(SupervisedTemplate):
             self.rm = rm_add
         else:
             idxs_to_replace = torch.randperm(self.rm[0].size(0))[:h]
-
-            temp = self.rm[1].clone().detach().cpu()
 
             self.rm[0][idxs_to_replace] = rm_add[0]
             self.rm[1][idxs_to_replace] = rm_add[1]
