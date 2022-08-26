@@ -22,7 +22,7 @@ from avalanche.training.templates.supervised import SupervisedTemplate
 class LatentReplay(SupervisedTemplate):
     """Latent Replay.
 
-    This implementations allows for the use of Latent Replay to protect the 
+    This implementations allows for the use of Latent Replay to protect the
     lower level of the model from forgetting.
     """
 
@@ -83,7 +83,7 @@ class LatentReplay(SupervisedTemplate):
             plugins = []
 
         # Model setup
-        model = FrozenNet(model=model, latent_layer_num=latent_layer_num,)
+        model = FrozenNet(model=model, latent_layer_num=latent_layer_num)
         print(model)
 
         optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
@@ -91,12 +91,12 @@ class LatentReplay(SupervisedTemplate):
         if criterion is None:
             criterion = CrossEntropyLoss()
 
-        self.freeze_below_layer = freeze_below_layer
-        self.rm_sz = rm_sz
         self.lr = lr
-        self.momentum = momentum
         self.l2 = l2
+        self.momentum = momentum
         self.rm = None
+        self.rm_sz = rm_sz
+        self.freeze_below_layer = freeze_below_layer
         self.cur_acts: Optional[Tensor] = None
         self.cur_y: Optional[Tensor] = None
         self.replay_mb_size = 0
@@ -125,12 +125,9 @@ class LatentReplay(SupervisedTemplate):
 
             # "freeze_up_to" will freeze layers below "freeze_below_layer"
             frozen_layers, frozen_parameters = freeze_up_to(
-                self.model, freeze_until_layer=self.freeze_below_layer,
+                self.model,
+                freeze_until_layer=self.freeze_below_layer,
             )
-
-            # JA:
-            print("OUTPUT OF FREEZE_UP_TO")
-            print(frozen_layers, frozen_parameters)
 
             # Adapt the model and optimizer
             self.model = self.model.to(self.device)
@@ -178,11 +175,6 @@ class LatentReplay(SupervisedTemplate):
 
         current_batch_mb_size = max(1, current_batch_mb_size)
         self.replay_mb_size = max(0, self.train_mb_size - current_batch_mb_size)
-
-        # JA
-        if self.clock.train_exp_counter > 0:
-            print(f"Replay mb size: {self.replay_mb_size}")
-            print(f"Current mb size: {current_batch_mb_size}")
 
         # AR1 only supports SIT scenarios (no task labels).
         self.dataloader = DataLoader(
@@ -235,12 +227,15 @@ class LatentReplay(SupervisedTemplate):
                 # On the first epoch only: store latent activations. Those
                 # activations will be used to update the replay buffer.
                 lat_acts = lat_acts.detach().clone().cpu()
+                cur_y = self.mb_y.detach().clone().cpu()
+
                 if mb_it == 0:
                     self.cur_acts = lat_acts
-                    self.cur_y = self.mb_y
+                    self.cur_y = cur_y
                 else:
                     self.cur_acts = torch.cat((self.cur_acts, lat_acts), 0)
-                    self.cur_y = torch.cat((self.cur_y, self.mb_y), 0)
+                    self.cur_y = torch.cat((self.cur_y, cur_y), 0)
+
             self._after_forward(**kwargs)
 
             # Loss & Backward
@@ -260,7 +255,8 @@ class LatentReplay(SupervisedTemplate):
 
     def _after_training_exp(self, **kwargs):
         h = min(
-            self.rm_sz // (self.clock.train_exp_counter + 1), self.cur_acts.size(0),
+            self.rm_sz // (self.clock.train_exp_counter + 1),
+            self.cur_acts.size(0),
         )
 
         # JA: Initialising replay buffer
@@ -273,7 +269,9 @@ class LatentReplay(SupervisedTemplate):
         if self.clock.train_exp_counter == 0:
             self.rm = rm_add
         else:
-            idxs_to_replace = torch.randperm(self.rm_sz)[:h]
+            idxs_to_replace = torch.randperm(self.rm[0].size(0))[:h]
+
+            temp = self.rm[1].clone().detach().cpu()
 
             self.rm[0][idxs_to_replace] = rm_add[0]
             self.rm[1][idxs_to_replace] = rm_add[1]

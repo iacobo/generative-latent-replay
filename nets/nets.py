@@ -117,24 +117,13 @@ class SimpleMLP(nn.Module, BaseModel):
     """
     Multi-Layer Perceptron with custom parameters.
     It can be configured to have multiple layers and dropout.
-    **Example**::
-        >>> from avalanche.models import SimpleMLP
-        >>> n_classes = 10 # e.g. MNIST
-        >>> model = SimpleMLP(num_classes=n_classes)
-        >>> print(model) # View model details
     """
 
     def __init__(
-        self,
-        num_classes=10,
-        input_size=28 * 28,
-        hidden_size=512,
-        hidden_layers=1,
-        drop_rate=0.5,
+        self, num_classes=10, hidden_size=512, hidden_layers=1, drop_rate=0.5,
     ):
         """
         :param num_classes: output size
-        :param input_size: input size
         :param hidden_size: hidden layer size
         :param hidden_layers: number of hidden layers
         :param drop_rate: dropout rate. 0 to disable
@@ -144,14 +133,11 @@ class SimpleMLP(nn.Module, BaseModel):
         self.features = nn.Sequential()
 
         for idx in range(hidden_layers):
-            cur_input_size = input_size if idx == 0 else hidden_size
-
-            self.features.add_module(f"fc{idx}", nn.Linear(cur_input_size, hidden_size))
+            self.features.add_module(f"fc{idx}", nn.LazyLinear(hidden_size))
             self.features.add_module(f"relu{idx}", nn.ReLU(inplace=False))
             self.features.add_module(f"drop{idx}", nn.Dropout(p=drop_rate))
 
-        self.classifier = nn.Linear(hidden_size, num_classes)
-        self._input_size = input_size
+        self.classifier = nn.LazyLinear(num_classes)
 
     def forward(self, x):
         x = x.contiguous()
