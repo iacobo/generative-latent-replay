@@ -1,20 +1,145 @@
+import warnings
+from typing import Optional, List
+
 import torch
+from torch import Tensor
+from torch.nn import CrossEntropyLoss
+from torch.optim import SGD
 from torch.utils.data import DataLoader
 
-from avalanche.training import AR1
+from nets import FrozenNet
+from avalanche.training.plugins import (
+    SupervisedPlugin,
+    EvaluationPlugin,
+)
+from avalanche.training.utils import freeze_up_to
+from avalanche.training.plugins.evaluation import default_evaluator
+from avalanche.training.templates.supervised import SupervisedTemplate
+
+# from utils import freeze_up_to
 
 
-class LatentReplay(AR1):
-    """AR1 with Latent Replay.
+class LatentReplay(SupervisedTemplate):
+    """Latent Replay.
 
-    This implementations allows for the use of both Synaptic Intelligence and
-    Latent Replay to protect the lower level of the model from forgetting.
-
-    While the original papers show how to use those two techniques in a mutual
-    exclusive way, this implementation allows for the use of both of them
-    concurrently. This behaviour is controlled by passing proper constructor
-    arguments).
+    This implementations allows for the use of Latent Replay to protect the
+    lower level of the model from forgetting.
     """
+
+    def __init__(
+        self,
+        model=None,
+        criterion=None,
+        lr: float = 0.001,
+        momentum=0.9,
+        l2=0.0005,
+        train_epochs: int = 4,
+        rm_sz: int = 1500,
+        freeze_below_layer: str = "end_features.0",
+        latent_layer_num: int = 19,
+        train_mb_size: int = 128,
+        eval_mb_size: int = 128,
+        device=None,
+        plugins: Optional[List[SupervisedPlugin]] = None,
+        evaluator: EvaluationPlugin = default_evaluator,
+        eval_every=-1,
+    ):
+        """
+        Creates an instance of the LatentReplay strategy.
+
+        :param criterion: The loss criterion to use. Defaults to None, in which
+            case the cross entropy loss is used.
+        :param lr: The learning rate (SGD optimizer).
+        :param momentum: The momentum (SGD optimizer).
+        :param l2: The L2 penalty used for weight decay.
+        :param train_epochs: The number of training epochs. Defaults to 4.
+        :param rm_sz: The size of the replay buffer. The replay buffer is shared
+            across classes. Defaults to 1500.
+        :param freeze_below_layer: A string describing the name of the layer
+            to use while freezing the lower (nearest to the input) part of the
+            model. The given layer is not frozen (exclusive).
+        :param latent_layer_num: The number of the layer to use as the Latent
+            Replay Layer. Usually this is the same of `freeze_below_layer`.
+        :param train_mb_size: The train minibatch size. Defaults to 128.
+        :param eval_mb_size: The eval minibatch size. Defaults to 128.
+        :param device: The device to use. Defaults to None (cpu).
+        :param plugins: (optional) list of StrategyPlugins.
+        :param evaluator: (optional) instance of EvaluationPlugin for logging
+            and metric computations.
+        :param eval_every: the frequency of the calls to `eval` inside the
+            training loop. -1 disables the evaluation. 0 means `eval` is called
+            only at the end of the learning experience. Values >0 mean that
+            `eval` is called every `eval_every` epochs and at the end of the
+            learning experience.
+        """
+
+        warnings.warn(
+            "The LatentReplay strategy implementation is in an alpha stage "
+            "and is not perfectly aligned with the paper "
+            "implementation. Please use at your own risk!"
+        )
+
+        if plugins is None:
+            plugins = []
+
+        # Model setup
+        model = FrozenNet(model=model, latent_layer_num=latent_layer_num)
+        print(model)
+
+        optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
+
+        if criterion is None:
+            criterion = CrossEntropyLoss()
+
+        self.lr = lr
+        self.l2 = l2
+        self.momentum = momentum
+        self.rm = None
+        self.rm_sz = rm_sz
+        self.freeze_below_layer = freeze_below_layer
+        self.cur_acts: Optional[Tensor] = None
+        self.cur_y: Optional[Tensor] = None
+        self.replay_mb_size = 0
+
+        super().__init__(
+            model,
+            optimizer,
+            criterion,
+            train_mb_size=train_mb_size,
+            train_epochs=train_epochs,
+            eval_mb_size=eval_mb_size,
+            device=device,
+            plugins=plugins,
+            evaluator=evaluator,
+            eval_every=eval_every,
+        )
+
+    def _before_training_exp(self, **kwargs):
+        self.model.train()
+        self.model.lat_features.eval()
+
+        if self.clock.train_exp_counter > 0:
+            # In Latent Replay batch 0 is treated differently as the feature extractor is left more free to learn.
+            # This is executed for experience > 0, in which we freeze layers
+            # below "self.freeze_below_layer" (which usually is the latent replay layer!).
+
+            # "freeze_up_to" will freeze layers below "freeze_below_layer"
+            freeze_up_to(
+                self.model,
+                freeze_until_layer=self.freeze_below_layer,
+            )
+
+            # Adapt the model and optimizer
+            self.model = self.model.to(self.device)
+            self.optimizer = SGD(
+                self.model.parameters(),
+                lr=self.lr,
+                momentum=self.momentum,
+                weight_decay=self.l2,
+            )
+
+        # super()... will run S.I. and CWR* plugin callbacks
+        super()._before_training_exp(**kwargs)
 
     def make_train_dataloader(
         self, num_workers=0, shuffle=True, pin_memory=True, **kwargs
@@ -62,24 +187,27 @@ class LatentReplay(AR1):
 
     # JA: See here for implementing custom loss function:
     # https://github.com/ContinualAI/avalanche/pull/604
-
-    # JA: For sampled latent replays, define sampling
+    #
+    # For sampled latent replays, define sampling
     # here (i.e. self.rm[0] = sampled x, self.rm[1] = sampled y)
+
     def training_epoch(self, **kwargs):
         for mb_it, self.mbatch in enumerate(self.dataloader):
             self._unpack_minibatch()
             self._before_training_iteration(**kwargs)
-
             self.optimizer.zero_grad()
+
+            # Grab y labels for the current minibatch
+            cur_y = self.mb_y.detach().clone().cpu()
+
             if self.clock.train_exp_counter > 0:
-                lat_mb_x = self.rm[0][
-                    mb_it * self.replay_mb_size : (mb_it + 1) * self.replay_mb_size
-                ]
-                lat_mb_x = lat_mb_x.to(self.device)
-                lat_mb_y = self.rm[1][
-                    mb_it * self.replay_mb_size : (mb_it + 1) * self.replay_mb_size
-                ]
-                lat_mb_y = lat_mb_y.to(self.device)
+                start = self.replay_mb_size * mb_it
+                end = self.replay_mb_size * (mb_it + 1)
+
+                lat_mb_x = self.rm[0][start:end].to(self.device)
+                lat_mb_y = self.rm[1][start:end].to(self.device)
+
+                # Set current y_labels to current minibatch plus replayed examples
                 self.mbatch[1] = torch.cat((self.mb_y, lat_mb_y), 0)
             else:
                 lat_mb_x = None
@@ -88,6 +216,13 @@ class LatentReplay(AR1):
             # lat_mb_x will be None for the very first batch (batch 0), which
             # means that lat_acts.shape[0] == self.mb_x[0].
             self._before_forward(**kwargs)
+
+            # JA:
+            if False and mb_it == 0:
+                utils.render_model(
+                    lat_mb_x, self.model, self.mb_x, self.clock.train_exp_counter
+                )
+
             self.mb_output, lat_acts = self.model(
                 self.mb_x, latent_input=lat_mb_x, return_lat_acts=True
             )
@@ -96,10 +231,14 @@ class LatentReplay(AR1):
                 # On the first epoch only: store latent activations. Those
                 # activations will be used to update the replay buffer.
                 lat_acts = lat_acts.detach().clone().cpu()
+
                 if mb_it == 0:
                     self.cur_acts = lat_acts
+                    self.cur_y = cur_y
                 else:
                     self.cur_acts = torch.cat((self.cur_acts, lat_acts), 0)
+                    self.cur_y = torch.cat((self.cur_y, cur_y), 0)
+
             self._after_forward(**kwargs)
 
             # Loss & Backward
@@ -118,35 +257,25 @@ class LatentReplay(AR1):
             self._after_training_iteration(**kwargs)
 
     def _after_training_exp(self, **kwargs):
-        """
-        After training the model, fit new GMM on current batch of data
-        and store GMM and associated frozen label generator (i.e. network head).
-        
-        Adds GMM and associated label generator to growing container of
-        domain-specific samplers.
-        """
         h = min(
-            self.rm_sz // (self.clock.train_exp_counter + 1), self.cur_acts.size(0),
+            self.rm_sz // (self.clock.train_exp_counter + 1),
+            self.cur_acts.size(0),
         )
 
         # JA: Initialising replay buffer
         # Use PyTorch GMM
         # https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
-        curr_data = self.experience.dataset
         idxs_cur = torch.randperm(self.cur_acts.size(0))[:h]
-        rm_add_y = torch.tensor([curr_data.targets[idx_cur] for idx_cur in idxs_cur])
-
-        rm_add = [self.cur_acts[idxs_cur], rm_add_y]
+        rm_add = [self.cur_acts[idxs_cur], self.cur_y[idxs_cur]]
 
         # replace patterns in random memory
         if self.clock.train_exp_counter == 0:
             self.rm = rm_add
         else:
-            idxs_2_replace = torch.randperm(self.rm[0].size(0))[:h]
-            for j, idx in enumerate(idxs_2_replace):
-                idx = int(idx)
-                self.rm[0][idx] = rm_add[0][j]
-                self.rm[1][idx] = rm_add[1][j]
+            idxs_to_replace = torch.randperm(self.rm[0].size(0))[:h]
+
+            self.rm[0][idxs_to_replace] = rm_add[0]
+            self.rm[1][idxs_to_replace] = rm_add[1]
 
         self.cur_acts = None
 

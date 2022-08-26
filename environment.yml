@@ -34,3 +34,4 @@ dependencies:
       - wheel
       - buildtools
       - git+https://github.com/ContinualAI/avalanche.git
+      - torchviz

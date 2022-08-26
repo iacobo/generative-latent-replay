@@ -16,8 +16,7 @@ This is the definition od the Mid-caffenet high resolution in Pythorch
 import torch.nn as nn
 import torch
 
-from torchvision.models.mobilenet import mobilenet_v2
-from pytorchcv.models.mobilenet import mobilenet_w1
+from avalanche.models.base_model import BaseModel
 
 try:
     from pytorchcv.models.mobilenet import DwsConvBlock
@@ -39,7 +38,7 @@ def remove_sequential(network, all_layers):
 
 def remove_DwsConvBlock(cur_layers):
 
-    all_layers = []
+    all_layers = []  # nn.ModuleList()
     for layer in cur_layers:
         if isinstance(layer, DwsConvBlock):
             # print("helloooo: ", layer)
@@ -58,52 +57,31 @@ class FrozenNet(nn.Module):
     """
 
     def __init__(
-        self,
-        model=mobilenet_w1,
-        pretrained=True,
-        latent_layer_num=20,
-        n_classes=50,
-        penultimate_layer_dim=2048,
+        self, model, latent_layer_num,
     ):
         super().__init__()
 
-        # model = model(pretrained=pretrained)  # mobilenet_w1(pretrained=pretrained)
-        # model.features.final_pool = nn.AvgPool2d(4)
-
-        all_layers = []
+        all_layers = nn.ModuleList()
         remove_sequential(model, all_layers)
-        all_layers = remove_DwsConvBlock(all_layers)
+        # all_layers = remove_DwsConvBlock(all_layers)
 
-        lat_list = []
-        end_list = []
+        self.lat_features = nn.Sequential(*all_layers[:latent_layer_num])
+        self.end_features = nn.Sequential(*all_layers[latent_layer_num:])
 
-        for i, layer in enumerate(all_layers[:-1]):
-            if i <= latent_layer_num:
-                lat_list.append(layer)
-            else:
-                end_list.append(layer)
+    def forward(self, raw_input, latent_input=None, return_lat_acts=False):
 
-        self.lat_features = nn.Sequential(*lat_list)
-        self.end_features = nn.Sequential(*end_list)
-
-        self.output = nn.Linear(penultimate_layer_dim, n_classes, bias=False)
-
-    def forward(self, x, latent_input=None, return_lat_acts=False):
-
-        if latent_input is not None:
-            with torch.no_grad():
-                orig_acts = self.lat_features(x)
-            lat_acts = torch.cat((orig_acts, latent_input), 0)
+        if latent_input is None:
+            lat_acts = self.lat_features(raw_input)
+            full_acts = lat_acts
         else:
-            orig_acts = self.lat_features(x)
-            lat_acts = orig_acts
+            with torch.no_grad():
+                lat_acts = self.lat_features(raw_input)
+            full_acts = torch.cat((lat_acts, latent_input), 0)
 
-        x = self.end_features(lat_acts)
-        x = x.view(x.size(0), -1)
-        logits = self.output(x)
+        logits = self.end_features(full_acts)
 
         if return_lat_acts:
-            return logits, orig_acts
+            return logits, lat_acts
         else:
             return logits
 
@@ -130,8 +108,48 @@ class SimpleCNN(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), -1)
+        x = x.flatten(start_dim=1)
         x = self.classifier(x)
+        return x
+
+
+class SimpleMLP(nn.Module, BaseModel):
+    """
+    Multi-Layer Perceptron with custom parameters.
+    It can be configured to have multiple layers and dropout.
+    """
+
+    def __init__(
+        self, num_classes=10, hidden_size=512, hidden_layers=1, drop_rate=0.5,
+    ):
+        """
+        :param num_classes: output size
+        :param hidden_size: hidden layer size
+        :param hidden_layers: number of hidden layers
+        :param drop_rate: dropout rate. 0 to disable
+        """
+        super().__init__()
+
+        self.features = nn.Sequential()
+
+        for idx in range(hidden_layers):
+            self.features.add_module(f"fc{idx}", nn.LazyLinear(hidden_size))
+            self.features.add_module(f"relu{idx}", nn.ReLU(inplace=False))
+            self.features.add_module(f"drop{idx}", nn.Dropout(p=drop_rate))
+
+        self.classifier = nn.LazyLinear(num_classes)
+
+    def forward(self, x):
+        x = x.contiguous()
+        x = x.flatten(start_dim=1)
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+    def get_features(self, x):
+        x = x.contiguous()
+        x = x.flatten(start_dim=1)
+        x = self.features(x)
         return x
 
 
