@@ -1,11 +1,6 @@
 import torch
-from torch import nn
-from torch import optim
-import torch.distributions as D
-
-from typing import NamedTuple, List, Callable
-from torch import Tensor
-from torch.nn import Module
+from torch import nn, optim
+from torch import distributions as D
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,8 +31,7 @@ def render_model(lat_mb_x, model, mb_x, train_exp_counter):
 
 
 def plot_random_example():
-    """Plots random examples from each class / dist.
-    """
+    """Plots random examples from each class / dist."""
 
     raise NotImplementedError
 
@@ -80,7 +74,7 @@ def plot_results(
 
 def plot_single_legend(fig):
     """
-    For multiple subplots with shared labeled lines to plot, 
+    For multiple subplots with shared labeled lines to plot,
     combines legends to remove redundancy.
     """
     labels_handles = {
@@ -116,6 +110,8 @@ def train_gmm(n_epochs, x, lr=0.001, momentum=0.9):
     return None
 
 
+# Use PyTorch GMM
+# https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
 class GMM(nn.Module):
     def __init__(self, n_components, dim, weights):
         """
@@ -146,4 +142,3 @@ class GMM(nn.Module):
         gmm = D.MixtureSameFamily(mix, comp)
 
         return gmm
-

@@ -1,3 +1,5 @@
+from argparse import ArgumentError
+from msilib.schema import Error
 import warnings
 from typing import Optional, List
 
@@ -19,8 +21,8 @@ from avalanche.training.templates.supervised import SupervisedTemplate
 import utils
 
 
-class LatentReplay(SupervisedTemplate):
-    """Latent Replay.
+class GenerativeLatentReplay(SupervisedTemplate):
+    """Generative Latent Replay.
 
     This implementations allows for the use of Latent Replay to protect the
     lower level of the model from forgetting.
@@ -37,6 +39,7 @@ class LatentReplay(SupervisedTemplate):
         rm_sz: int = 1500,
         freeze_below_layer: str = "end_features.0",
         latent_layer_num: int = 19,
+        generator="gmm",
         train_mb_size: int = 128,
         eval_mb_size: int = 128,
         device=None,
@@ -94,6 +97,7 @@ class LatentReplay(SupervisedTemplate):
         self.lr = lr
         self.l2 = l2
         self.momentum = momentum
+        self.generator = generator
         self.rm = None
         self.rm_sz = rm_sz
         self.freeze_below_layer = freeze_below_layer
@@ -262,11 +266,15 @@ class LatentReplay(SupervisedTemplate):
             self.cur_acts.size(0),
         )
 
-        # JA: Initialising replay buffer
-        # Use PyTorch GMM
-        # https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
-        idxs_cur = torch.randperm(self.cur_acts.size(0))[:h]
-        rm_add = [self.cur_acts[idxs_cur], self.cur_y[idxs_cur]]
+        # Initialising replay buffer
+        if self.generator == "gmm":
+            sampler = utils.GMM()
+        else:
+            raise NotImplementedError(f'Unknown generator "{self.generator}"')
+
+        sampler = sampler.fit(self.cur_acts, self.cur_y)
+        self.samplers.append(sampler)
+        rm_add = sampler.sample(h)
 
         # replace patterns in random memory
         if self.clock.train_exp_counter == 0:
