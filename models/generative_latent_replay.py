@@ -269,6 +269,14 @@ class GenerativeLatentReplay(SupervisedTemplate):
         # Initialising replay buffer
         if self.generator == "gmm":
             sampler = utils.GMM()
+        elif self.generator == "kmeans":
+            sampler = utils.KMeans()
+        elif self.generator == "density":
+            sampler = utils.DBSCAN()
+        elif self.generator == "connectivity":
+            sampler = utils.HAC()
+        elif self.generator == "markov":
+            sampler = utils.MarkovChain()
         else:
             raise NotImplementedError(f'Unknown generator "{self.generator}"')
 
