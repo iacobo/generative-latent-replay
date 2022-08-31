@@ -263,8 +263,6 @@ class LatentReplay(SupervisedTemplate):
         )
 
         # JA: Initialising replay buffer
-        # Use PyTorch GMM
-        # https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
         idxs_cur = torch.randperm(self.cur_acts.size(0))[:h]
         rm_add = [self.cur_acts[idxs_cur], self.cur_y[idxs_cur]]
 
