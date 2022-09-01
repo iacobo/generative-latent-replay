@@ -138,7 +138,7 @@ class SimpleMLP(nn.Module, BaseModel):
         """
         super().__init__()
 
-        self.features = nn.Sequential(nn.Flatten())
+        self.features = nn.Sequential() #nn.Flatten())
 
         for idx in range(hidden_layers):
             self.features.add_module(f"fc{idx}", nn.LazyLinear(hidden_size))
