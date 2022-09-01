@@ -51,13 +51,18 @@ def remove_DwsConvBlock(cur_layers):
 
 class FrozenNet(nn.Module):
     """
-    Wrapper for pytorch models which splits layers into latent 
-    and end features. Used for freezing latent features during 
+    Wrapper for pytorch models which splits layers into latent
+    and end features. Used for freezing latent features during
     Latent Replay and related continual learning methods (e.g. AR1).
+
+    Warning: currently only imports modules from sequential of `model`
+    i.e. bare functions will be skipped.
     """
 
     def __init__(
-        self, model, latent_layer_num,
+        self,
+        model,
+        latent_layer_num,
     ):
         super().__init__()
 
@@ -95,20 +100,19 @@ class SimpleCNN(nn.Module):
         super(SimpleCNN, self).__init__()
 
         self.features = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1),
+            nn.LazyConv2d(32, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.LazyConv2d(64, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=1, padding=0),
+            nn.LazyConv2d(64, kernel_size=1, padding=0),
             nn.ReLU(inplace=True),
             nn.AdaptiveMaxPool2d(1),
             nn.Dropout(p=0.25),
         )
-        self.classifier = nn.Sequential(nn.Linear(64, num_classes))
+        self.classifier = nn.Sequential(nn.Flatten(), nn.LazyLinear(num_classes))
 
     def forward(self, x):
         x = self.features(x)
-        x = x.flatten(start_dim=1)
         x = self.classifier(x)
         return x
 
@@ -120,7 +124,11 @@ class SimpleMLP(nn.Module, BaseModel):
     """
 
     def __init__(
-        self, num_classes=10, hidden_size=512, hidden_layers=1, drop_rate=0.5,
+        self,
+        num_classes=10,
+        hidden_size=512,
+        hidden_layers=1,
+        drop_rate=0.5,
     ):
         """
         :param num_classes: output size
@@ -130,7 +138,7 @@ class SimpleMLP(nn.Module, BaseModel):
         """
         super().__init__()
 
-        self.features = nn.Sequential()
+        self.features = nn.Sequential(nn.Flatten())
 
         for idx in range(hidden_layers):
             self.features.add_module(f"fc{idx}", nn.LazyLinear(hidden_size))
@@ -141,14 +149,12 @@ class SimpleMLP(nn.Module, BaseModel):
 
     def forward(self, x):
         x = x.contiguous()
-        x = x.flatten(start_dim=1)
         x = self.features(x)
         x = self.classifier(x)
         return x
 
     def get_features(self, x):
         x = x.contiguous()
-        x = x.flatten(start_dim=1)
         x = self.features(x)
         return x
 
