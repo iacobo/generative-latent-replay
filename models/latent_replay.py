@@ -37,6 +37,7 @@ class LatentReplay(SupervisedTemplate):
         rm_sz: int = 1500,
         freeze_below_layer: str = "end_features.0",
         latent_layer_num: int = 19,
+        subsample_replays: bool = False,
         train_mb_size: int = 128,
         eval_mb_size: int = 128,
         device=None,
@@ -100,6 +101,7 @@ class LatentReplay(SupervisedTemplate):
         self.cur_acts: Optional[Tensor] = None
         self.cur_y: Optional[Tensor] = None
         self.replay_mb_size = 0
+        self.subsample_replays = subsample_replays
 
         super().__init__(
             model,
@@ -169,9 +171,13 @@ class LatentReplay(SupervisedTemplate):
 
         if self.clock.train_exp_counter > 0:
             train_patterns = len(self.adapted_dataset)
-            current_batch_mb_size = train_patterns // (
-                (train_patterns + self.rm_sz) // self.train_mb_size
-            )
+
+            if self.subsample_replays:
+                current_batch_mb_size //= 2
+            else:
+                current_batch_mb_size = train_patterns // (
+                    (train_patterns + self.rm_sz) // self.train_mb_size
+                )
 
         current_batch_mb_size = max(1, current_batch_mb_size)
         self.replay_mb_size = max(0, self.train_mb_size - current_batch_mb_size)
@@ -201,8 +207,8 @@ class LatentReplay(SupervisedTemplate):
             cur_y = self.mb_y.detach().clone().cpu()
 
             if self.clock.train_exp_counter > 0:
-                start = self.replay_mb_size * mb_it
-                end = self.replay_mb_size * (mb_it + 1)
+                start = (self.replay_mb_size * mb_it) % self.rm[0].size(0)  # JA
+                end = (self.replay_mb_size * (mb_it + 1)) % self.rm[0].size(0)
 
                 lat_mb_x = self.rm[0][start:end].to(self.device)
                 lat_mb_y = self.rm[1][start:end].to(self.device)
