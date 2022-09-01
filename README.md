@@ -2,7 +2,20 @@
 
 ![Python](https://badges.aleen42.com/src/python.svg) ![PyTorch](https://img.shields.io/badge/​-PyTorch-%23EE4C2C.svg?style=flat&logo=PyTorch) ![conda](https://img.shields.io/badge/%E2%80%8B-conda-%2344A833.svg?style=flat&logo=anaconda&logoColor=44A833) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-Repo for generative latent replay work using BN.
+Repo for generative latent replay - a replay based continual learning method which:
+
+1. freezes the backbone of a network after initial training
+2. builds a generative model of latent representations of datasets as transformed by this backbone
+3. replays sampled pseudo--latent-examples for subsequent training to mitigate catastrophic forgetting
+
+We compare generartive latent replay against raw latent replay and baseline transfer learning.
+
+We also explore:
+
+- different modelling methods (GMM, etc)
+- freezing the network at differing depths
+- different replay buffer sizes
+- different replay samploing strategies
 
 ## Reproducing experiments
 
