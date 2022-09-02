@@ -13,15 +13,10 @@
 This is the definition od the Mid-caffenet high resolution in Pythorch
 """
 
-import torch.nn as nn
 import torch
+from torch import nn
 
 from avalanche.models.base_model import BaseModel
-
-try:
-    from pytorchcv.models.mobilenet import DwsConvBlock
-except Exception:
-    from pytorchcv.models.common import DwsConvBlock
 
 
 def remove_sequential(network, all_layers):
@@ -34,19 +29,6 @@ def remove_sequential(network, all_layers):
         else:  # if leaf node, add it to list
             # print(layer)
             all_layers.append(layer)
-
-
-def remove_DwsConvBlock(cur_layers):
-
-    all_layers = []  # nn.ModuleList()
-    for layer in cur_layers:
-        if isinstance(layer, DwsConvBlock):
-            # print("helloooo: ", layer)
-            for ch in layer.children():
-                all_layers.append(ch)
-        else:
-            all_layers.append(layer)
-    return all_layers
 
 
 class FrozenNet(nn.Module):
@@ -68,7 +50,6 @@ class FrozenNet(nn.Module):
 
         all_layers = nn.ModuleList()
         remove_sequential(model, all_layers)
-        # all_layers = remove_DwsConvBlock(all_layers)
 
         self.lat_features = nn.Sequential(*all_layers[:latent_layer_num])
         self.end_features = nn.Sequential(*all_layers[latent_layer_num:])
@@ -138,7 +119,7 @@ class SimpleMLP(nn.Module, BaseModel):
         """
         super().__init__()
 
-        self.features = nn.Sequential() #nn.Flatten())
+        self.features = nn.Sequential()  # nn.Flatten())
 
         for idx in range(hidden_layers):
             self.features.add_module(f"fc{idx}", nn.LazyLinear(hidden_size))

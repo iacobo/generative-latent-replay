@@ -93,9 +93,9 @@ def plot_single_legend(fig):
 
 
 def train_gmm(x, n_epochs=4, lr=0.001, momentum=0.9):
-    
+
     gmm = GMM()
-    parameters = gmm.parameters() #[weights, means, stdevs]
+    parameters = gmm.parameters()  # [weights, means, stdevs]
     optimizer = optim.SGD(parameters, lr=lr, momentum=momentum)
 
     print("Fitting GMM")
@@ -124,22 +124,19 @@ class GMM(nn.Module):
             dim (int):          Dimensionality of data to model.
         """
         super().__init__()
-        self.n_components = n_components
         self.dim = dim
+        self.n_components = n_components
 
         # Initialise mixture weights to uniform
         if weights is None:
-            self.weights = torch.ones(
-                n_components,
-            )
+            self.weights = torch.ones(n_components)
         else:
             self.weights = nn.Parameter(weights)
             assert (
                 self.weights.shape[0] == n_components
             ), "`weights` must be the same size as `n_components`"
         # Initialise normal mean/std's to random
-        # JA: implement initialising with previous
-        #     GMM's posteriors.
+        # JA: implement initialising with previous GMM's posteriors.
 
     def forward(self, n_components, dim):
         """
