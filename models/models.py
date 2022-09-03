@@ -1,20 +1,6 @@
-################################################################################
-# Copyright (c) 2021 ContinualAI.                                              #
-# Copyrights licensed under the MIT License.                                   #
-# See the accompanying LICENSE file for terms.                                 #
-#                                                                              #
-# Date: 1-05-2020                                                              #
-# Author(s): Vincenzo Lomonaco                                                 #
-# E-mail: contact@continualai.org                                              #
-# Website: avalanche.continualai.org                                           #
-################################################################################
-
-"""
-This is the definition od the Mid-caffenet high resolution in Pythorch
-"""
-
 import torch
 from torch import nn
+from torch import distributions as D
 
 from avalanche.models.base_model import BaseModel
 
@@ -138,6 +124,45 @@ class SimpleMLP(nn.Module, BaseModel):
         x = x.contiguous()
         x = self.features(x)
         return x
+
+
+# Use PyTorch GMM
+# https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
+class GMM(nn.Module):
+    def __init__(self, n_components, dim, weights=None):
+        """
+        Initialises a GMM.
+
+        Args:
+            n_components (int): Number of components in GMM.
+            dim (int):          Dimensionality of data to model.
+        """
+        super().__init__()
+        self.dim = dim
+        self.n_components = n_components
+
+        # Initialise mixture weights to uniform
+        if weights is None:
+            self.weights = torch.ones(n_components)
+        else:
+            self.weights = nn.Parameter(weights)
+            assert (
+                self.weights.shape[0] == n_components
+            ), "`weights` must be the same size as `n_components`"
+        # Initialise normal mean/std's to random
+        # JA: implement initialising with previous GMM's posteriors.
+
+    def forward(self, n_components, dim):
+        """
+        Forward pass.
+        """
+        mix = D.Categorical(self.weights)
+        comp = D.Independent(
+            D.Normal(torch.randn(n_components, dim), torch.rand(n_components, dim)), 1
+        )
+        gmm = D.MixtureSameFamily(mix, comp)
+
+        return gmm
 
 
 if __name__ == "__main__":

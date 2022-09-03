@@ -1,5 +1,1 @@
-"""High-level strategies.
-
-This module contains
-"""
-from .latent_replay import LatentReplay
+from .models import FrozenNet, SimpleMLP, SimpleCNN

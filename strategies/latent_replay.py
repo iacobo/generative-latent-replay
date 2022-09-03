@@ -7,7 +7,6 @@ from torch.nn import CrossEntropyLoss
 from torch.optim import SGD
 from torch.utils.data import DataLoader
 
-from nets import FrozenNet
 from avalanche.training.plugins import (
     SupervisedPlugin,
     EvaluationPlugin,
@@ -17,6 +16,7 @@ from avalanche.training.plugins.evaluation import default_evaluator
 from avalanche.training.templates.supervised import SupervisedTemplate
 
 import utils
+from models import FrozenNet
 
 
 class LatentReplay(SupervisedTemplate):
