@@ -1,4 +1,3 @@
-import warnings
 from typing import Optional, List
 
 import torch
@@ -6,7 +5,6 @@ from torch import Tensor
 from torch.nn import CrossEntropyLoss
 from torch.optim import SGD
 
-from nets import FrozenNet
 from avalanche.training.plugins import (
     SupervisedPlugin,
     EvaluationPlugin,
@@ -14,7 +12,8 @@ from avalanche.training.plugins import (
 from avalanche.training.plugins.evaluation import default_evaluator
 
 import utils
-from latent_replay import LatentReplay
+from models import FrozenNet
+from strategies import LatentReplay
 
 
 class GenerativeLatentReplay(LatentReplay):
@@ -71,12 +70,6 @@ class GenerativeLatentReplay(LatentReplay):
             `eval` is called every `eval_every` epochs and at the end of the
             learning experience.
         """
-
-        warnings.warn(
-            "The LatentReplay strategy implementation is in an alpha stage "
-            "and is not perfectly aligned with the paper "
-            "implementation. Please use at your own risk!"
-        )
 
         if plugins is None:
             plugins = []

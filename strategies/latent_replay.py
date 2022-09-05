@@ -1,4 +1,3 @@
-import warnings
 from typing import Optional, List
 
 import torch
@@ -17,7 +16,6 @@ from avalanche.training.templates.supervised import SupervisedTemplate
 
 import utils
 from models import FrozenNet
-
 
 class LatentReplay(SupervisedTemplate):
     """Latent Replay.
@@ -73,12 +71,6 @@ class LatentReplay(SupervisedTemplate):
             `eval` is called every `eval_every` epochs and at the end of the
             learning experience.
         """
-
-        warnings.warn(
-            "The LatentReplay strategy implementation is in an alpha stage "
-            "and is not perfectly aligned with the paper "
-            "implementation. Please use at your own risk!"
-        )
 
         if plugins is None:
             plugins = []

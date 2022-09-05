@@ -58,24 +58,36 @@ class FrozenNet(nn.Module):
             return logits
 
 
+def get_hidden_sizes(start_size=32, depth=4):
+    sizes = [start_size] + [start_size * 2] * (depth - 2) + [start_size]
+    return sizes
+
+
 class SimpleCNN(nn.Module):
     """
     Convolutional Neural Network
     """
 
-    def __init__(self, num_classes=10):
-        super(SimpleCNN, self).__init__()
+    def __init__(self, num_classes=10, hidden_size=32, hidden_layers=1, drop_rate=0.5):
+        """Simple CNN implementation.
 
-        self.features = nn.Sequential(
-            nn.LazyConv2d(32, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(inplace=True),
-            nn.LazyConv2d(64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.LazyConv2d(64, kernel_size=1, padding=0),
-            nn.ReLU(inplace=True),
-            nn.AdaptiveMaxPool2d(1),
-            nn.Dropout(p=0.25),
-        )
+        Args:
+            num_classes (int, optional): Output size. Defaults to 10.
+            hidden_size (int, list, optional): Width of model. Defaults to 32.
+            hidden_layers (int, optional): Depth of model. Defaults to 1.
+        """
+        super().__init__()
+
+        self.features = nn.Sequential()
+
+        for idx in range(hidden_layers):
+            self.features.add_module(
+                f"conv{idx}", nn.LazyConv2d(hidden_size, kernel_size=3, padding=1)
+            )
+            self.features.add_module(f"relu{idx}", nn.ReLU(inplace=False))
+
+        self.features.add_module(nn.AdaptiveMaxPool2d(1))
+        self.features.add_module(nn.Dropout(p=drop_rate))
         self.classifier = nn.Sequential(nn.Flatten(), nn.LazyLinear(num_classes))
 
     def forward(self, x):
@@ -90,13 +102,7 @@ class SimpleMLP(nn.Module, BaseModel):
     It can be configured to have multiple layers and dropout.
     """
 
-    def __init__(
-        self,
-        num_classes=10,
-        hidden_size=512,
-        hidden_layers=1,
-        drop_rate=0.5,
-    ):
+    def __init__(self, num_classes=10, hidden_size=512, hidden_layers=1, drop_rate=0.5):
         """
         :param num_classes: output size
         :param hidden_size: hidden layer size
