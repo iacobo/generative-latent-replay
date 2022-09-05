@@ -3,18 +3,7 @@ from torch import nn
 from torch import distributions as D
 
 from avalanche.models.base_model import BaseModel
-
-
-def remove_sequential(network, all_layers):
-
-    for layer in network.children():
-        # if sequential layer, apply recursively to layers in sequential layer
-        if isinstance(layer, nn.Sequential):
-            # print(layer)
-            remove_sequential(layer, all_layers)
-        else:  # if leaf node, add it to list
-            # print(layer)
-            all_layers.append(layer)
+from avalanche.models.mobilenetv1 import remove_sequential
 
 
 class FrozenNet(nn.Module):
@@ -33,9 +22,7 @@ class FrozenNet(nn.Module):
         latent_layer_num,
     ):
         super().__init__()
-
-        all_layers = nn.ModuleList()
-        remove_sequential(model, all_layers)
+        remove_sequential(model, (all_layers := nn.ModuleList()))
 
         self.lat_features = nn.Sequential(*all_layers[:latent_layer_num])
         self.end_features = nn.Sequential(*all_layers[latent_layer_num:])

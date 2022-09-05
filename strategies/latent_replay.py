@@ -17,6 +17,7 @@ from avalanche.training.templates.supervised import SupervisedTemplate
 import utils
 from models import FrozenNet
 
+
 class LatentReplay(SupervisedTemplate):
     """Latent Replay.
 
