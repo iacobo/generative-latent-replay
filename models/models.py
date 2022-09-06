@@ -5,6 +5,10 @@ from torch import distributions as D
 from avalanche.models.base_model import BaseModel
 from avalanche.models.mobilenetv1 import remove_sequential
 
+from sklearn.mixture import GaussianMixture
+
+import numpy as np
+
 
 class FrozenNet(nn.Module):
     """
@@ -19,7 +23,7 @@ class FrozenNet(nn.Module):
     def __init__(
         self,
         model,
-        latent_layer_num,
+        latent_layer_num=0,
     ):
         super().__init__()
         remove_sequential(model, (all_layers := nn.ModuleList()))
@@ -158,9 +162,57 @@ class GMM(nn.Module):
         return gmm
 
 
+class GMM_sk:
+    def __init__(self, n_classes, cov_type="full"):
+        """
+        Initialises a GMM.
+
+        Args:
+            n_components (int): Number of components in GMM.
+            cov_type (str):     Covariance type. One of "full", "diag", "tied", "spherical".
+            dim (int):          Dimensionality of data to model.
+        """
+        super().__init__()
+        self.cov_type = cov_type
+        self.n_classes = n_classes
+
+        self.estimator = GaussianMixture(
+            n_components=self.n_classes,
+            covariance_type=self.cov_type,
+            max_iter=20,
+            random_state=0,
+        )
+
+    def train(self, x, y):
+        self.estimator.means_init = np.array(
+            [x[y == i].mean(axis=0) for i in range(self.n_classes)]
+        )
+        self.estimator.fit(x)
+
+    def forward(self, x, y):
+        """
+        Forward pass.
+        """
+        y_pred = self.estimator.predict(x)
+
+        return y_pred
+
+    def get_acc(self, y_pred, y_true):
+        acc = np.mean(y_pred.ravel() == y_true.ravel()) * 100
+        return acc
+
+    def get_per_class_cluster(self, x):
+        """
+        Get per class cluster
+        """
+
+        # clusters = clusterer.fit(x)
+        # n_clusters = len(clusters.centroids)
+        # return clusters.centroids
+        return None
+
+
 if __name__ == "__main__":
 
-    model = FrozenNet(pretrained=True)
-
-    for name, param in model.named_parameters():
-        print(name)
+    model = GMM(n_components=5, dim=2)
+    print(model)
