@@ -78,8 +78,6 @@ class GenerativeLatentReplay(LatentReplay):
         model = FrozenNet(model=model, latent_layer_num=latent_layer_num)
         print(model)
 
-        optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
-
         if criterion is None:
             criterion = CrossEntropyLoss()
 
@@ -95,9 +93,11 @@ class GenerativeLatentReplay(LatentReplay):
         self.replay_mb_size = 0
 
         super().__init__(
-            model,
-            optimizer,
-            criterion,
+            model=model,
+            lr=lr,
+            momentum=momentum,
+            l2=l2,
+            criterion=criterion,
             train_mb_size=train_mb_size,
             train_epochs=train_epochs,
             eval_mb_size=eval_mb_size,

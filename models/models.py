@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch import distributions as D
+from torch.nn import functional as F
 
 from avalanche.models.base_model import BaseModel
 from avalanche.models.mobilenetv1 import remove_sequential
@@ -8,6 +9,9 @@ from avalanche.models.mobilenetv1 import remove_sequential
 from sklearn.mixture import GaussianMixture
 
 import numpy as np
+
+from sklearn import datasets
+from sklearn.model_selection import StratifiedKFold
 
 
 class FrozenNet(nn.Module):
@@ -163,7 +167,7 @@ class GMM(nn.Module):
 
 
 class GMM_sk:
-    def __init__(self, n_classes, cov_type="full"):
+    def __init__(self, n_classes, cov_type="full", max_iter=20, random_state=0):
         """
         Initialises a GMM.
 
@@ -175,12 +179,14 @@ class GMM_sk:
         super().__init__()
         self.cov_type = cov_type
         self.n_classes = n_classes
+        self.max_iter = max_iter
+        self.random_state = random_state
 
         self.estimator = GaussianMixture(
             n_components=self.n_classes,
             covariance_type=self.cov_type,
-            max_iter=20,
-            random_state=0,
+            max_iter=self.max_iter,
+            random_state=self.random_state,
         )
 
     def train(self, x, y):
@@ -189,7 +195,7 @@ class GMM_sk:
         )
         self.estimator.fit(x)
 
-    def forward(self, x, y):
+    def forward(self, x):
         """
         Forward pass.
         """
@@ -201,7 +207,7 @@ class GMM_sk:
         acc = np.mean(y_pred.ravel() == y_true.ravel()) * 100
         return acc
 
-    def get_per_class_cluster(self, x):
+    def get_centroids(self, x):
         """
         Get per class cluster
         """
@@ -211,8 +217,45 @@ class GMM_sk:
         # return clusters.centroids
         return None
 
+    def sample(self, n_samples=1, one_hot=True):
+        X, y = self.estimator.sample(n_samples)
+        X, y = torch.from_numpy(X).float(), torch.from_numpy(y).long()
+        
+        if one_hot:
+            y = F.one_hot(y, num_classes=self.n_classes)
+
+        return X, y
+
+
+def example_problem():
+    iris = datasets.load_iris()
+
+    # Break up the dataset into non-overlapping training (75%) and testing
+    # (25%) sets.
+    skf = StratifiedKFold(n_splits=4)
+    # Only take the first fold.
+    train_index, test_index = next(iter(skf.split(iris.data, iris.target)))
+
+    X_train = iris.data[train_index]
+    y_train = iris.target[train_index]
+    X_test = iris.data[test_index]
+    y_test = iris.target[test_index]
+
+    return X_train, y_train, X_test, y_test
+
 
 if __name__ == "__main__":
 
-    model = GMM(n_components=5, dim=2)
-    print(model)
+    X_train, y_train, X_test, y_test = example_problem()
+
+    n_classes = len(np.unique(y_train))
+    model = GMM_sk(n_classes=n_classes)
+    model.train(X_train, y_train)
+
+    y_pred = model.forward(X_test)
+    acc = model.get_acc(y_pred, y_test)
+
+    samples = model.sample(5)
+
+    print(acc)
+    print(samples)
