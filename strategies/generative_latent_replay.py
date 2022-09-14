@@ -12,6 +12,7 @@ from avalanche.training.plugins import (
 from avalanche.training.plugins.evaluation import default_evaluator
 
 import utils
+import models
 from models import FrozenNet
 from strategies import LatentReplay
 
@@ -71,19 +72,6 @@ class GenerativeLatentReplay(LatentReplay):
             learning experience.
         """
 
-        if plugins is None:
-            plugins = []
-
-        # Model setup
-        model = FrozenNet(model=model, latent_layer_num=latent_layer_num)
-        print(model)
-
-        if criterion is None:
-            criterion = CrossEntropyLoss()
-
-        self.lr = lr
-        self.l2 = l2
-        self.momentum = momentum
         self.generator = generator
         self.rm = None
         self.rm_sz = rm_sz
@@ -98,6 +86,7 @@ class GenerativeLatentReplay(LatentReplay):
             momentum=momentum,
             l2=l2,
             criterion=criterion,
+            latent_layer_num=latent_layer_num,
             train_mb_size=train_mb_size,
             train_epochs=train_epochs,
             eval_mb_size=eval_mb_size,
@@ -117,7 +106,8 @@ class GenerativeLatentReplay(LatentReplay):
         # Use PyTorch GMM
         # https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
         if self.generator == "gmm":
-            sampler = utils.GMM()
+            n_classes = self.cur_y.unique().size(0)
+            sampler = models.GMM_sk(n_classes=n_classes)
         elif self.generator == "kmeans":
             sampler = utils.KMeans()
         elif self.generator == "density":
@@ -129,7 +119,9 @@ class GenerativeLatentReplay(LatentReplay):
         else:
             raise NotImplementedError(f'Unknown generator "{self.generator}"')
 
-        sampler = sampler.fit(self.cur_acts, self.cur_y)
+        sampler = sampler.train(
+            self.cur_acts.detach().cpu().numpy(), self.cur_y.detach().cpu().numpy()
+        )
         self.samplers.append(sampler)
         rm_add = sampler.sample(h)
 

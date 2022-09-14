@@ -1,1 +1,1 @@
-from .models import FrozenNet, SimpleMLP, SimpleCNN
+from .models import FrozenNet, SimpleMLP, SimpleCNN, GMM_sk
