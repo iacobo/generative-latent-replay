@@ -36,6 +36,7 @@ class GenerativeLatentReplay(LatentReplay):
         freeze_below_layer: str = "end_features.0",
         latent_layer_num: int = 19,
         generator="gmm",
+        samplers=None,
         train_mb_size: int = 128,
         eval_mb_size: int = 128,
         device=None,
@@ -71,7 +72,8 @@ class GenerativeLatentReplay(LatentReplay):
             `eval` is called every `eval_every` epochs and at the end of the
             learning experience.
         """
-
+        if samplers is None:
+            self.samplers = []
         self.generator = generator
         self.rm = None
         self.rm_sz = rm_sz
@@ -118,10 +120,12 @@ class GenerativeLatentReplay(LatentReplay):
             sampler = utils.MarkovChain()
         else:
             raise NotImplementedError(f'Unknown generator "{self.generator}"')
-
-        sampler = sampler.train(
+        
+        print("Training generator...")
+        sampler.train(
             self.cur_acts.detach().cpu().numpy(), self.cur_y.detach().cpu().numpy()
         )
+        print("Generator trained.")
         self.samplers.append(sampler)
         rm_add = sampler.sample(h)
 
@@ -137,4 +141,4 @@ class GenerativeLatentReplay(LatentReplay):
         self.cur_acts = None
 
         # Runs S.I. and CWR* plugin callbacks
-        super()._after_training_exp(**kwargs)
+        super(LatentReplay, self)._after_training_exp(**kwargs)

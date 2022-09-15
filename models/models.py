@@ -217,7 +217,7 @@ class GMM_sk:
         # return clusters.centroids
         return None
 
-    def sample(self, n_samples=1, one_hot=True):
+    def sample(self, n_samples=1, one_hot=False):
         X, y = self.estimator.sample(n_samples)
         X, y = torch.from_numpy(X).float(), torch.from_numpy(y).long()
         
