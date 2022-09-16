@@ -8,7 +8,6 @@ from avalanche.training.plugins import (
 )
 from avalanche.training.plugins.evaluation import default_evaluator
 
-import utils
 import models
 from strategies import LatentReplay
 
@@ -101,13 +100,13 @@ class GenerativeLatentReplay(LatentReplay):
             n_classes = self.cur_y.unique().size(0)
             sampler = models.GMM_sk(n_classes=n_classes)
         elif self.generator == "kmeans":
-            sampler = utils.KMeans()
+            sampler = models.KMeans()
         elif self.generator == "density":
-            sampler = utils.DBSCAN()
+            sampler = models.DBSCAN()
         elif self.generator == "connectivity":
-            sampler = utils.HAC()
+            sampler = models.HAC()
         elif self.generator == "markov":
-            sampler = utils.MarkovChain()
+            sampler = models.MarkovChain()
         else:
             raise NotImplementedError(f'Unknown generator "{self.generator}"')
 
