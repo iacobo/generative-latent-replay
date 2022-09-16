@@ -57,8 +57,7 @@ conda activate env-glr
 Then [run](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/execute.html) the appropriate notebooks detailing the experiments.
 
 **Alternatively** you can run the notebook directly in Google Colab:
+
 [![Benchmark baseline](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/iacobo/generative-latent-replay/blob/main/experiments.ipynb)
 
 Our implementation is fully compatible with the [Avalanche](https://github.com/ContinualAI/avalanche) continual learning library.
-
-NOTE: Search "generative latent replay" (no quotes) to get relevant papers for discussion in paper, namely generative feature replay, latent autoencoder replay etc.
