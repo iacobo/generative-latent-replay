@@ -17,11 +17,14 @@ Generative latent replay overcomes two issues encountered in alternative replay 
    1. data is synthetic
    2. data need not be stored indefinitely
 
-We compare generative latent replay against
+We compare generative latent replay against:
 
-- replay
-- latent replay, and
-- naive transfer learning
+Continual Learning Method | Replay based | Low memory | Privacy
+--------------------------|--------------|------------|----------------
+Naive                     | ❌           | ❌        | ✅
+Replay                    | ✅           | ❌        | ❌
+Latent Replay             | ✅           | ✅        | ❌
+Generative Latent Replay  | ✅           | ✅        | ✅
 
 We also explore the effect of different:
 
