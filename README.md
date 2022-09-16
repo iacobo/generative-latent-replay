@@ -29,22 +29,9 @@ Replay                    | ✅           | ❌        | ❌
 Latent Replay             | ✅           | ✅        | ❌
 Generative Latent Replay  | ✅           | ✅        | ✅
 
-## Reproducing experiments
+## Experiments
 
-To run experiments, first create and activate a virtual environment:
-
-```python
-conda env create -f environment.yml
-conda activate env-glr
-```
-
-Then [run](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/execute.html) the appropriate notebooks detailing the experiments.
-
-**Alternatively** you can run the notebook directly in Google Colab:
-
-[![Benchmark baseline](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/iacobo/generative-latent-replay/blob/main/experiments.ipynb)
-
-## Experiment descriptions
+### Description
 
 We compare generative latent replay against the above methods on the following datasets:
 
@@ -58,6 +45,21 @@ We also explore the effect of different:
 - network freeze depths
 - replay buffer sizes
 - replay sampling strategies
+
+### Reproducing experiments
+
+To run experiments, first create and activate a virtual environment:
+
+```python
+conda env create -f environment.yml
+conda activate env-glr
+```
+
+Then [run](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/execute.html) the appropriate [notebooks](experiments.ipynb) detailing the experiments.
+
+**Alternatively** you can run the notebook directly in Google Colab:
+
+<center>[![Benchmark baseline](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/iacobo/generative-latent-replay/blob/main/experiments.ipynb)</center>
 
 ## Porting method
 
