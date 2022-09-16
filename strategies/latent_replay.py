@@ -41,7 +41,7 @@ class LatentReplay(SupervisedTemplate):
         eval_mb_size: int = 128,
         device=None,
         plugins: Optional[List[SupervisedPlugin]] = None,
-        evaluator: EvaluationPlugin = default_evaluator,
+        evaluator: EvaluationPlugin = default_evaluator(),
         eval_every=-1,
     ):
         """
@@ -78,7 +78,6 @@ class LatentReplay(SupervisedTemplate):
 
         # Model setup
         model = FrozenNet(model=model, latent_layer_num=latent_layer_num)
-        print(model)
 
         optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
 
@@ -186,9 +185,6 @@ class LatentReplay(SupervisedTemplate):
 
     # JA: See here for implementing custom loss function:
     # https://github.com/ContinualAI/avalanche/pull/604
-    #
-    # For sampled latent replays, define sampling
-    # here (i.e. self.rm[0] = sampled x, self.rm[1] = sampled y)
 
     def training_epoch(self, **kwargs):
         for mb_it, self.mbatch in enumerate(self.dataloader):
@@ -200,7 +196,7 @@ class LatentReplay(SupervisedTemplate):
             cur_y = self.mb_y.detach().clone().cpu()
 
             if self.clock.train_exp_counter > 0:
-                start = (self.replay_mb_size * mb_it) % self.rm[0].size(0)  # JA
+                start = (self.replay_mb_size * mb_it) % self.rm[0].size(0)
                 end = (self.replay_mb_size * (mb_it + 1)) % self.rm[0].size(0)
 
                 lat_mb_x = self.rm[0][start:end].to(self.device)
@@ -261,7 +257,7 @@ class LatentReplay(SupervisedTemplate):
             self.cur_acts.size(0),
         )
 
-        # JA: Initialising replay buffer
+        # Initialising replay buffer
         idxs_cur = torch.randperm(self.cur_acts.size(0))[:h]
         rm_add = [self.cur_acts[idxs_cur], self.cur_y[idxs_cur]]
 
@@ -276,5 +272,5 @@ class LatentReplay(SupervisedTemplate):
 
         self.cur_acts = None
 
-        # Runs S.I. and CWR* plugin callbacks
+        # Runs plugin callbacks
         super()._after_training_exp(**kwargs)

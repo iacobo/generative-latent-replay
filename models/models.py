@@ -167,7 +167,7 @@ class GMM(nn.Module):
 
 
 class GMM_sk:
-    def __init__(self, n_classes, cov_type="full", max_iter=20, random_state=0):
+    def __init__(self, n_classes, cov_type="full", max_iter=40, random_state=666):
         """
         Initialises a GMM.
 
@@ -220,7 +220,7 @@ class GMM_sk:
     def sample(self, n_samples=1, one_hot=False):
         X, y = self.estimator.sample(n_samples)
         X, y = torch.from_numpy(X).float(), torch.from_numpy(y).long()
-        
+
         if one_hot:
             y = F.one_hot(y, num_classes=self.n_classes)
 

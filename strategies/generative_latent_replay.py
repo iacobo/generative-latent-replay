@@ -1,9 +1,6 @@
 from typing import Optional, List
 
 import torch
-from torch import Tensor
-from torch.nn import CrossEntropyLoss
-from torch.optim import SGD
 
 from avalanche.training.plugins import (
     SupervisedPlugin,
@@ -13,7 +10,6 @@ from avalanche.training.plugins.evaluation import default_evaluator
 
 import utils
 import models
-from models import FrozenNet
 from strategies import LatentReplay
 
 
@@ -41,7 +37,7 @@ class GenerativeLatentReplay(LatentReplay):
         eval_mb_size: int = 128,
         device=None,
         plugins: Optional[List[SupervisedPlugin]] = None,
-        evaluator: EvaluationPlugin = default_evaluator,
+        evaluator: EvaluationPlugin = default_evaluator(),
         eval_every=-1,
     ):
         """
@@ -72,15 +68,9 @@ class GenerativeLatentReplay(LatentReplay):
             `eval` is called every `eval_every` epochs and at the end of the
             learning experience.
         """
+        self.generator = generator
         if samplers is None:
             self.samplers = []
-        self.generator = generator
-        self.rm = None
-        self.rm_sz = rm_sz
-        self.freeze_below_layer = freeze_below_layer
-        self.cur_acts: Optional[Tensor] = None
-        self.cur_y: Optional[Tensor] = None
-        self.replay_mb_size = 0
 
         super().__init__(
             model=model,
@@ -89,6 +79,8 @@ class GenerativeLatentReplay(LatentReplay):
             l2=l2,
             criterion=criterion,
             latent_layer_num=latent_layer_num,
+            rm_sz=rm_sz,
+            freeze_below_layer=freeze_below_layer,
             train_mb_size=train_mb_size,
             train_epochs=train_epochs,
             eval_mb_size=eval_mb_size,
@@ -120,7 +112,7 @@ class GenerativeLatentReplay(LatentReplay):
             sampler = utils.MarkovChain()
         else:
             raise NotImplementedError(f'Unknown generator "{self.generator}"')
-        
+
         print("Training generator...")
         sampler.train(
             self.cur_acts.detach().cpu().numpy(), self.cur_y.detach().cpu().numpy()
@@ -140,5 +132,5 @@ class GenerativeLatentReplay(LatentReplay):
 
         self.cur_acts = None
 
-        # Runs S.I. and CWR* plugin callbacks
+        # Runs plugin callbacks
         super(LatentReplay, self)._after_training_exp(**kwargs)

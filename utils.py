@@ -48,15 +48,15 @@ def plot_results(
 ):
 
     results_clean = {"train": {"acc": [], "loss": []}, "test": {"acc": [], "loss": []}}
-    loss_prefix = f"Loss_Stream/eval_phase/{mode}_stream/"
-    acc_prefix = f"Top1_Acc_Stream/eval_phase/{mode}_stream/"
+    loss_prefix = f"Loss_Exp/eval_phase/{mode}_stream/Task000/"
+    acc_prefix = f"Top1_Acc_Exp/eval_phase/{mode}_stream/Task000/"
 
     results_clean[mode]["loss"] = [
-        [result[f"{loss_prefix}Task{str(i).zfill(3)}"] for result in results]
+        [result[f"{loss_prefix}Exp{str(i).zfill(3)}"] for result in results]
         for i in range(n_experiences)
     ]
     results_clean[mode]["acc"] = [
-        [result[f"{acc_prefix}Task{str(i).zfill(3)}"] for result in results]
+        [result[f"{acc_prefix}Exp{str(i).zfill(3)}"] for result in results]
         for i in range(n_experiences)
     ]
 
@@ -91,6 +91,20 @@ def plot_single_legend(fig):
         bbox_to_anchor=(0.5, 0),
         bbox_transform=plt.gcf().transFigure,
     )
+
+
+def plot_multiple_results(
+    results, titles, axes, fig, n_experiences, metric="acc", repeat_vals=False
+):
+    for i, (res, name) in enumerate(zip(results, titles)):
+        try:
+            plot_results(
+                res, name, axes[i], n_experiences, metric, repeat_vals=repeat_vals
+            )
+        except:
+            pass
+
+    plot_single_legend(fig)
 
 
 def train_gmm(x, n_epochs=4, lr=0.001, momentum=0.9):
