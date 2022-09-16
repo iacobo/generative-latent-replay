@@ -6,22 +6,21 @@
 
 ## Method overview
 
-Repo for generative latent replay - a replay based continual learning method which:
+Repo for Generative Latent Replay (GLR) - a continual learning method which aleviates catastophic forgetting through strict regularisation of low level data representation and synthetic latent replay. Explicitly GLR:
 
-1. freezes the backbone of a network after initial training
-2. builds generative models of the backbone-output latent representations of each dataset encountered by the model
-3. samples latent pseudo-examples from these generators for replay during subsequent training (to mitigate catastrophic forgetting)
+1. Freezes the backbone of a network after initial training
+2. Builds generative models of the backbone-output latent representations of each dataset encountered by the model
+3. Samples latent pseudo-examples from these generators for replay during subsequent training (to mitigate catastrophic forgetting)
 
-## Benefits
+## Features
 
-Generative latent replay overcomes two issues encountered in alternative replay strategies:
+Generative latent replay overcomes two issues encountered in traditional replay strategies:
 
-1. aleviates storage issues as:
-   1. replays can be sampled on the fly
-   2. bottlenecked latent representations are much smaller than raw data
-2. aleviates privacy concerns as:
-   1. data is synthetic
-   2. data need not be stored indefinitely
+1. High memory footprint:
+   - replays can be sampled ad hoc
+   - caches [compressed] latent representations
+2. Privacy concerns
+   - data is synthetic
 
 Continual Learning Method | Replay based | Low memory | Privacy
 --------------------------|--------------|------------|----------------
@@ -29,21 +28,6 @@ Naive                     | ❌           | ❌        | ✅
 Replay                    | ✅           | ❌        | ❌
 Latent Replay             | ✅           | ✅        | ❌
 Generative Latent Replay  | ✅           | ✅        | ✅
-
-## Experiments
-
-We compare generative latent replay against the above methods on the following datasets:
-
-- Permuted MNIST
-- Rotated MNIST
-- CoRE50
-
-We also explore the effect of different:
-
-- generative models (GMM, etc)
-- network freeze depths
-- replay buffer sizes
-- replay sampling strategies
 
 ## Reproducing experiments
 
@@ -60,4 +44,26 @@ Then [run](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/exec
 
 [![Benchmark baseline](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/iacobo/generative-latent-replay/blob/main/experiments.ipynb)
 
-Our implementation is fully compatible with the [Avalanche](https://github.com/ContinualAI/avalanche) continual learning library.
+## Experiment descriptions
+
+We compare generative latent replay against the above methods on the following datasets:
+
+- Permuted MNIST
+- Rotated MNIST
+- CoRE50
+
+We also explore the effect of different:
+
+- generative models (GMM, etc)
+- network freeze depths
+- replay buffer sizes
+- replay sampling strategies
+
+## Porting method
+
+Our implementation is fully compatible with the [Avalanche](https://github.com/ContinualAI/avalanche) continual learning library, and can be imported as a plugin in the same way as other Avalanche strategies:
+
+```python
+from avalanche.training.plugins import StrategyPlugin
+from glr import GenerativeLatentReplay
+```
