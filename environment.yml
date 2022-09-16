@@ -33,5 +33,5 @@ dependencies:
   - pip:
       - wheel
       - buildtools
-      - git+https://github.com/ContinualAI/avalanche.git
       - torchviz
+      - avalanche-lib
