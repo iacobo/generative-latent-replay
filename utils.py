@@ -1,11 +1,11 @@
-import torch
-from torch import optim
-
 import numpy as np
 import matplotlib.pyplot as plt
 
+import torch
+from torch import optim
 from torchviz import make_dot
 
+# Local imports
 import models
 
 
@@ -48,15 +48,14 @@ def plot_results(
 ):
 
     results_clean = {"train": {"acc": [], "loss": []}, "test": {"acc": [], "loss": []}}
-    loss_prefix = f"Loss_Exp/eval_phase/{mode}_stream/Task000/"
-    acc_prefix = f"Top1_Acc_Exp/eval_phase/{mode}_stream/Task000/"
+    prefix = f"Loss_Exp/eval_phase/{mode}_stream/Task000/"
 
     results_clean[mode]["loss"] = [
-        [result[f"{loss_prefix}Exp{str(i).zfill(3)}"] for result in results]
+        [result[f"Loss_Exp/{prefix}Exp{str(i).zfill(3)}"] for result in results]
         for i in range(n_experiences)
     ]
     results_clean[mode]["acc"] = [
-        [result[f"{acc_prefix}Exp{str(i).zfill(3)}"] for result in results]
+        [result[f"Top1_Acc_Exp/{prefix}Exp{str(i).zfill(3)}"] for result in results]
         for i in range(n_experiences)
     ]
 
@@ -94,13 +93,18 @@ def plot_single_legend(fig):
 
 
 def plot_multiple_results(
-    results, titles, axes, fig, n_experiences, metric="acc", repeat_vals=False
+    results,
+    titles,
+    axes,
+    fig,
+    n_experiences,
+    metric="acc",
+    mode="train",
+    repeat_vals=10,
 ):
     for i, (res, name) in enumerate(zip(results, titles)):
         try:
-            plot_results(
-                res, name, axes[i], n_experiences, metric, repeat_vals=repeat_vals
-            )
+            plot_results(res, name, axes[i], n_experiences, metric, mode, repeat_vals)
         except:
             pass
 
