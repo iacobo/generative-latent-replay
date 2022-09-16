@@ -97,8 +97,6 @@ class GenerativeLatentReplay(LatentReplay):
         )
 
         # Initialising replay buffer
-        # Use PyTorch GMM
-        # https://pytorch.org/docs/stable/distributions.html#mixturesamefamily
         if self.generator == "gmm":
             n_classes = self.cur_y.unique().size(0)
             sampler = models.GMM_sk(n_classes=n_classes)

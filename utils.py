@@ -48,7 +48,7 @@ def plot_results(
 ):
 
     results_clean = {"train": {"acc": [], "loss": []}, "test": {"acc": [], "loss": []}}
-    prefix = f"Loss_Exp/eval_phase/{mode}_stream/Task000/"
+    prefix = f"eval_phase/{mode}_stream/Task000/"
 
     results_clean[mode]["loss"] = [
         [result[f"Loss_Exp/{prefix}Exp{str(i).zfill(3)}"] for result in results]
@@ -67,7 +67,7 @@ def plot_results(
     for i in range(n_experiences):
         ax.plot(res[i], label=f"Task {i}")
 
-    ax.set_title(f"{method_name} {mode.capitalize()} {metric.capitalize()}")
+    ax.set_title(method_name)
 
     return results_clean
 
@@ -103,12 +103,10 @@ def plot_multiple_results(
     repeat_vals=10,
 ):
     for i, (res, name) in enumerate(zip(results, titles)):
-        try:
-            plot_results(res, name, axes[i], n_experiences, metric, mode, repeat_vals)
-        except:
-            pass
+        plot_results(res, name, axes[i], n_experiences, metric, mode, repeat_vals)
 
     plot_single_legend(fig)
+    fig.suptitle(f"{mode.capitalize()} {metric.capitalize()}")
 
 
 def train_gmm(x, n_epochs=4, lr=0.001, momentum=0.9):
