@@ -58,7 +58,7 @@ def get_hidden_sizes(start_size=32, depth=4):
     return sizes
 
 
-class SimpleCNN(nn.Module):
+class SimpleCNN(nn.Module, BaseModel):
     """
     Convolutional Neural Network
     """
@@ -90,6 +90,11 @@ class SimpleCNN(nn.Module):
         x = self.classifier(x)
         return x
 
+    def get_features(self, x):
+        x = x.contiguous()
+        x = self.features(x)
+        return x
+
 
 class SimpleMLP(nn.Module, BaseModel):
     """
@@ -99,10 +104,10 @@ class SimpleMLP(nn.Module, BaseModel):
 
     def __init__(self, num_classes=10, hidden_size=512, hidden_layers=1, drop_rate=0.5):
         """
-        :param num_classes: output size
-        :param hidden_size: hidden layer size
+        :param num_classes:   output size
+        :param hidden_size:   hidden layer size
         :param hidden_layers: number of hidden layers
-        :param drop_rate: dropout rate. 0 to disable
+        :param drop_rate:     dropout rate. 0 to disable
         """
         super().__init__()
 
@@ -173,7 +178,8 @@ class GMM_sk:
 
         Args:
             n_components (int): Number of components in GMM.
-            cov_type (str):     Covariance type. One of "full", "diag", "tied", "spherical".
+            cov_type (str):     Covariance type. One of "full", "diag", "tied",
+                                "spherical".
             dim (int):          Dimensionality of data to model.
         """
         super().__init__()
