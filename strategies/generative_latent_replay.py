@@ -98,7 +98,7 @@ class GenerativeLatentReplay(LatentReplay):
         # Initialising replay buffer
         if self.generator == "gmm":
             n_classes = self.cur_y.unique().size(0)
-            sampler = models.GMM_sk(n_classes=n_classes)
+            sampler = models.GMM(n_classes=n_classes)
         elif self.generator == "kmeans":
             sampler = models.KMeans()
         elif self.generator == "density":
