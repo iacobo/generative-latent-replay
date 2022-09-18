@@ -14,8 +14,8 @@ from avalanche.training.utils import freeze_up_to
 from avalanche.training.plugins.evaluation import default_evaluator
 from avalanche.training.templates.supervised import SupervisedTemplate
 
-import utils
-from models import FrozenNet
+from src import utils
+from src.models import FrozenNet
 
 
 class LatentReplay(SupervisedTemplate):

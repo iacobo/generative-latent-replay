@@ -3,11 +3,9 @@ from torch import nn
 from torch import distributions as D
 from torch.nn import functional as F
 
-from sklearn.mixture import GaussianMixture
-
 import numpy as np
-
 from sklearn import datasets
+from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import StratifiedKFold
 
 

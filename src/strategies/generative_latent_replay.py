@@ -8,8 +8,8 @@ from avalanche.training.plugins import (
 )
 from avalanche.training.plugins.evaluation import default_evaluator
 
-import models
-from strategies import LatentReplay
+from src import models
+from src.strategies import LatentReplay
 
 
 class GenerativeLatentReplay(LatentReplay):

@@ -1,20 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import torch
-from torch import optim
 from torchviz import make_dot
-
-# Local imports
-import models
-
-
-def get_device():
-    """
-    Returns:
-        torch.device: Torch device. First GPU if available, else CPU.
-    """
-    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def render_model(lat_mb_x, model, mb_x, train_exp_counter):
@@ -107,23 +94,3 @@ def plot_multiple_results(
 
     plot_single_legend(fig)
     fig.suptitle(f"{mode.capitalize()} {metric.capitalize()}")
-
-
-def train_gmm(x, n_epochs=4, lr=0.001, momentum=0.9):
-
-    gmm = models.GMM()
-    parameters = gmm.parameters()  # [weights, means, stdevs]
-    optimizer = optim.SGD(parameters, lr=lr, momentum=momentum)
-
-    print("Fitting GMM")
-
-    for i in range(n_epochs):
-        optimizer.zero_grad()
-        x = torch.randn(5000, 2)  # this can be an arbitrary x samples
-        loss = -gmm.log_prob(x).mean()  # -densityflow.log_prob(inputs=x).mean()
-        loss.backward()
-        optimizer.step()
-
-        print(f"Epoch: {i} | Loss: {loss}")
-
-    return None
