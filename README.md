@@ -75,5 +75,5 @@ Our implementation is fully compatible with the [Avalanche](https://github.com/C
 
 ```python
 from avalanche.training.plugins import StrategyPlugin
-from glr import GenerativeLatentReplay
+from glr.strategies import GenerativeLatentReplay
 ```
