@@ -1,6 +1,8 @@
 import torch
 from torch import optim
 
+import pandas as pd
+
 
 def get_device():
     """
@@ -8,6 +10,23 @@ def get_device():
         torch.device: Torch device. First GPU if available, else CPU.
     """
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
+def results_to_df(strategy_names, results):
+    """
+    Args:
+        results (dict): Dictionary of results from the experiment.
+
+    Returns:
+        pd.DataFrame: Results as a DataFrame.
+    """
+
+    final_avg_accs = [
+        res[-1]["Top1_Acc_Stream/eval_phase/train_stream/Task000"] for res in results
+    ]
+    df = pd.DataFrame({"Strategy": strategy_names, "Final Avg Acc": final_avg_accs})
+
+    return df
 
 
 def train_model(x, model, n_epochs=4, lr=0.001, momentum=0.9):
