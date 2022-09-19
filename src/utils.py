@@ -47,6 +47,8 @@ def results_to_df(strategy_names, results):
     ]
     df = pd.DataFrame({"Strategy": strategy_names, "Final Avg Acc": final_avg_accs})
 
+    df = df.style.highlight_max(axis=0, props="bfseries: ;").to_latex()
+
     return df
 
 
