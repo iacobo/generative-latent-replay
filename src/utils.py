@@ -25,7 +25,7 @@ def set_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
 
-    torch.use_deterministic_algorithms(True)
+    #torch.use_deterministic_algorithms(True)
 
     if torch.cuda.is_available():
         torch.backends.cudnn.deterministic = True
