@@ -54,7 +54,7 @@ class SimpleCNN(nn.Module, BaseModel):
     Convolutional Neural Network
     """
 
-    def __init__(self, num_classes=10, hidden_size=32, hidden_layers=1, drop_rate=0.5):
+    def __init__(self, num_classes=10, hidden_size=32, hidden_layers=1, drop_rate=0):
         """Simple CNN implementation.
 
         Args:
@@ -71,6 +71,7 @@ class SimpleCNN(nn.Module, BaseModel):
                 f"conv{idx}", nn.LazyConv2d(hidden_size, kernel_size=3, padding=1)
             )
             self.features.add_module(f"relu{idx}", nn.ReLU(inplace=False))
+            self.features.add_module(f"drop{idx}", nn.Dropout(p=drop_rate))
 
         self.features.add_module("MaxPool", nn.AdaptiveMaxPool2d(1))
         self.features.add_module("drop", nn.Dropout(p=drop_rate))
@@ -93,7 +94,7 @@ class SimpleMLP(nn.Module, BaseModel):
     It can be configured to have multiple layers and dropout.
     """
 
-    def __init__(self, num_classes=10, hidden_size=512, hidden_layers=1, drop_rate=0.5):
+    def __init__(self, num_classes=10, hidden_size=512, hidden_layers=1, drop_rate=0):
         """
         :param num_classes:   output size
         :param hidden_size:   hidden layer size
