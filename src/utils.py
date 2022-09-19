@@ -33,7 +33,7 @@ def set_seed(seed):
         torch.backends.cudnn.deterministic = True
 
 
-def results_to_df(strategy_names, results):
+def results_to_df(strategy_names, results, latex=False):
     """
     Args:
         results (dict): Dictionary of results from the experiment.
@@ -45,9 +45,14 @@ def results_to_df(strategy_names, results):
     final_avg_accs = [
         res[-1]["Top1_Acc_Stream/eval_phase/train_stream/Task000"] for res in results
     ]
-    df = pd.DataFrame({"Strategy": strategy_names, "Final Avg Acc": final_avg_accs})
+    df = pd.DataFrame(
+        {"Final Avg Acc": final_avg_accs}, index=strategy_names
+    )
 
-    df = df.style.highlight_max(axis=0, props="bfseries: ;").to_latex()
+    df = df.style.highlight_max(axis=1, props="bfseries: ;")
+
+    if latex:
+        df = df.to_latex()
 
     return df
 
