@@ -82,13 +82,14 @@ def plot_single_legend(fig):
 def plot_multiple_results(
     results,
     titles,
-    axes,
-    fig,
     n_experiences,
     metric="acc",
     mode="train",
     repeat_vals=10,
 ):
+    
+    fig, axes = plt.subplots(1, len(titles), sharey="row")
+    
     for i, (res, name) in enumerate(zip(results, titles)):
         plot_results(res, name, axes[i], n_experiences, metric, mode, repeat_vals)
 
