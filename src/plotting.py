@@ -54,7 +54,8 @@ def plot_results(
     for i in range(n_experiences):
         ax.plot(res[i], label=f"Task {i}")
 
-    ax.set_title(method_name)
+    if metric == "acc":
+        ax.set_title(method_name)
 
     return results_clean
 
@@ -88,10 +89,19 @@ def plot_multiple_results(
     repeat_vals=10,
 ):
 
-    fig, axes = plt.subplots(1, len(titles), sharey="row")
+    fig, axes = plt.subplots(
+        2,
+        len(titles),
+        sharey="row",
+        squeeze=False,
+        figsize=(2 * len(titles), 4 * len(titles)),
+    )
 
     for i, (res, name) in enumerate(zip(results, titles)):
-        plot_results(res, name, axes[i], n_experiences, metric, mode, repeat_vals)
+        plot_results(res, name, axes[0][i], n_experiences, "acc", mode, repeat_vals)
+        plot_results(res, name, axes[1][i], n_experiences, "loss", mode, repeat_vals)
 
     plot_single_legend(fig)
-    fig.suptitle(f"{mode.capitalize()} {metric.capitalize()}")
+    fig.axes[0].set_ylabel(f"{mode.capitalize()} Accuracy")
+    fig.axes[1].set_ylabel(f"{mode.capitalize()} Loss")
+    plt.xlabel("Epoch")
