@@ -1,7 +1,8 @@
+import random
+import numpy as np
+import pandas as pd
 import torch
 from torch import optim
-
-import pandas as pd
 
 
 def get_device():
@@ -10,6 +11,26 @@ def get_device():
         torch.device: Torch device. First GPU if available, else CPU.
     """
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
+def set_seed(seed):
+    """
+    Set seeds for reproducibility.
+    """
+    if seed is None:
+        return
+
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+
+    torch.use_deterministic_algorithms(True)
+
+    if torch.cuda.is_available():
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = False
 
 
 def results_to_df(strategy_names, results):
