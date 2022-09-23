@@ -109,22 +109,11 @@ class LatentReplay(SupervisedTemplate):
         )
 
     def _before_training_exp(self, **kwargs):
-        self.model.train()
-        self.model.lat_features.eval()
-
+        # Freeze model backbone during subsequent experiences
         if self.clock.train_exp_counter > 0:
-            # In Latent Replay batch 0 is treated differently as the feature extractor is left more free to learn.
-            # This is executed for experience > 0, in which we freeze layers
-            # below "self.freeze_below_layer" (which usually is the latent replay layer!).
-
-            # "freeze_up_to" will freeze layers below "freeze_below_layer"
-            freeze_up_to(
-                self.model,
-                freeze_until_layer=self.freeze_below_layer,
-            )
+            freeze_up_to(self.model, self.freeze_below_layer)
 
             # Adapt the model and optimizer
-            self.model = self.model.to(self.device)
             self.optimizer = SGD(
                 self.model.parameters(),
                 lr=self.lr,

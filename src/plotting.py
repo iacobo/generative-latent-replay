@@ -74,8 +74,8 @@ def plot_single_legend(fig):
     fig.legend(
         labels_handles.values(),
         labels_handles.keys(),
-        loc="upper center",
-        bbox_to_anchor=(0.5, 0),
+        loc="center left",
+        bbox_to_anchor=(1, 0.5),
         bbox_transform=plt.gcf().transFigure,
     )
 
@@ -84,7 +84,6 @@ def plot_multiple_results(
     results,
     titles,
     n_experiences,
-    metric="acc",
     mode="train",
     repeat_vals=10,
 ):
@@ -94,7 +93,7 @@ def plot_multiple_results(
         len(titles),
         sharey="row",
         squeeze=False,
-        figsize=(2 * len(titles), 4 * len(titles)),
+        figsize=(2 * len(titles), 6),
     )
 
     for i, (res, name) in enumerate(zip(results, titles)):
