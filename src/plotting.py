@@ -36,15 +36,18 @@ def plot_results(
 
     results_clean = {"train": {"acc": [], "loss": []}, "test": {"acc": [], "loss": []}}
     prefix = f"eval_phase/{mode}_stream/Task000/"
-
-    results_clean[mode]["loss"] = [
-        [result[f"Loss_Exp/{prefix}Exp{str(i).zfill(3)}"] for result in results]
-        for i in range(n_experiences)
-    ]
-    results_clean[mode]["acc"] = [
-        [result[f"Top1_Acc_Exp/{prefix}Exp{str(i).zfill(3)}"] for result in results]
-        for i in range(n_experiences)
-    ]
+    
+    if metric == 'loss':
+        results_clean[mode]["loss"] = [
+            [result[f"Loss_Exp/{prefix}Exp{str(i).zfill(3)}"] for result in results]
+            for i in range(n_experiences)
+        ]
+    
+    elif metric == 'acc':
+        results_clean[mode]["acc"] = [
+            [result[f"Top1_Acc_Exp/{prefix}Exp{str(i).zfill(3)}"] for result in results]
+            for i in range(n_experiences)
+        ]
 
     res = results_clean[mode][metric]
 
@@ -81,11 +84,7 @@ def plot_single_legend(fig):
 
 
 def plot_multiple_results(
-    results,
-    titles,
-    n_experiences,
-    mode="train",
-    repeat_vals=10,
+    results, titles, n_experiences, mode="train", repeat_vals=10, loss=False
 ):
 
     fig, axes = plt.subplots(
@@ -98,9 +97,13 @@ def plot_multiple_results(
 
     for i, (res, name) in enumerate(zip(results, titles)):
         plot_results(res, name, axes[0][i], n_experiences, "acc", mode, repeat_vals)
-        plot_results(res, name, axes[1][i], n_experiences, "loss", mode, repeat_vals)
+        if loss:
+            plot_results(
+                res, name, axes[1][i], n_experiences, "loss", mode, repeat_vals
+            )
 
     plot_single_legend(fig)
     fig.axes[0].set_ylabel(f"{mode.capitalize()} Accuracy")
-    fig.axes[1].set_ylabel(f"{mode.capitalize()} Loss")
+    if loss:
+        fig.axes[1].set_ylabel(f"{mode.capitalize()} Loss")
     plt.xlabel("Epoch")

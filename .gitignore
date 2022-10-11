@@ -134,3 +134,5 @@ dmypy.json
 # Misc experimental files
 sandbox.ipynb
 results/
+csvlogs/
+log.*

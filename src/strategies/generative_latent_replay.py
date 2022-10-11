@@ -110,7 +110,7 @@ class GenerativeLatentReplay(LatentReplay):
         else:
             raise NotImplementedError(f'Unknown generator "{self.generator}"')
 
-        print("Training generator...")
+        print(f"Training generator {self.clock.train_exp_counter}...")
         sampler.train(
             self.cur_acts.detach().cpu().numpy(), self.cur_y.detach().cpu().numpy()
         )
