@@ -36,14 +36,14 @@ def plot_results(
 
     results_clean = {"train": {"acc": [], "loss": []}, "test": {"acc": [], "loss": []}}
     prefix = f"eval_phase/{mode}_stream/Task000/"
-    
-    if metric == 'loss':
+
+    if metric == "loss":
         results_clean[mode]["loss"] = [
             [result[f"Loss_Exp/{prefix}Exp{str(i).zfill(3)}"] for result in results]
             for i in range(n_experiences)
         ]
-    
-    elif metric == 'acc':
+
+    elif metric == "acc":
         results_clean[mode]["acc"] = [
             [result[f"Top1_Acc_Exp/{prefix}Exp{str(i).zfill(3)}"] for result in results]
             for i in range(n_experiences)
