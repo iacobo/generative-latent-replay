@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import pandas as pd
 from torch import optim
+from avalanche.benchmarks.utils import AvalancheSubset
 
 
 def get_device():
@@ -45,9 +46,7 @@ def results_to_df(strategy_names, results, latex=False):
     final_avg_accs = [
         res[-1]["Top1_Acc_Stream/eval_phase/train_stream/Task000"] for res in results
     ]
-    df = pd.DataFrame(
-        {"Final Avg Acc": final_avg_accs}, index=strategy_names
-    )
+    df = pd.DataFrame({"Final Avg Acc": final_avg_accs}, index=strategy_names)
 
     df = df.style.highlight_max(axis=1, props="bfseries: ;")
 
@@ -75,3 +74,13 @@ def train_model(x, model, n_epochs=4, lr=0.001, momentum=0.9):
         print(f"Epoch: {i} | Loss: {loss}")
 
     return None
+
+
+def shrink_dataset(ava_dataset, idx):
+    if isinstance(idx, int):
+        idx = list(range(idx))
+
+    for exp in ava_dataset.train_stream:
+        exp.dataset = AvalancheSubset(exp.dataset, idx)
+
+    return ava_dataset
