@@ -163,7 +163,7 @@ class LatentReplay(SupervisedTemplate):
         current_batch_mb_size = max(1, current_batch_mb_size)
         self.replay_mb_size = max(0, self.train_mb_size - current_batch_mb_size)
 
-        # AR1 only supports SIT scenarios (no task labels).
+        # Only supports SIT scenarios (no task labels).
         self.dataloader = DataLoader(
             self.adapted_dataset,
             num_workers=num_workers,

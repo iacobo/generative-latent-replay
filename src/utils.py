@@ -3,7 +3,26 @@ import torch
 import numpy as np
 import pandas as pd
 from torch import optim
+from pathlib import Path
 from avalanche.benchmarks.utils import AvalancheSubset
+
+from avalanche.training.plugins import EvaluationPlugin
+from avalanche.evaluation.metrics import (
+    # forgetting_metrics,
+    accuracy_metrics,
+    loss_metrics,
+    # timing_metrics,
+    # cpu_usage_metrics,
+    # confusion_matrix_metrics,
+    # disk_usage_metrics,
+)
+from avalanche.logging import (
+    # InteractiveLogger,
+    TextLogger,
+    # TensorboardLogger,
+    # WandBLogger,
+    CSVLogger,
+)
 
 
 def get_device():
@@ -84,3 +103,26 @@ def shrink_dataset(ava_dataset, idx):
         exp.dataset = AvalancheSubset(exp.dataset, idx)
 
     return ava_dataset
+
+
+def get_eval_plugin(strategy_name, csv=True, text=True):
+
+    loggers = []
+    if text:
+        loggers.append(TextLogger(open(Path("log") / strategy_name / "log.txt", "a")))
+    if csv:
+        loggers.append(CSVLogger(Path("csv_logs") / strategy_name))
+
+    eval_plugin = EvaluationPlugin(
+        accuracy_metrics(epoch=True, experience=True, stream=True),
+        loss_metrics(epoch=True, experience=True, stream=True),
+        # timing_metrics(epoch=True, epoch_running=True),
+        # cpu_usage_metrics(experience=True),
+        # forgetting_metrics(experience=True, stream=True),
+        # confusion_matrix_metrics(num_classes=experiences.n_classes, save_image=True,
+        #                         stream=True),
+        # disk_usage_metrics(minibatch=True, epoch=True, experience=True, stream=True),
+        loggers=loggers,
+    )
+
+    return eval_plugin

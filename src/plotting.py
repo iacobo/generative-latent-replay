@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from torchviz import make_dot
@@ -24,7 +25,7 @@ def plot_random_example():
     raise NotImplementedError
 
 
-def plot_results(
+def plot_results_old(
     results,
     method_name,
     ax,
@@ -61,6 +62,43 @@ def plot_results(
         ax.set_title(method_name)
 
     return results_clean
+
+
+def plot_results(
+    results,
+    method_name,
+    ax,
+    n_experiences,
+    metric="acc",
+    mode="train",
+    repeat_vals=False,
+):
+    """
+    Plots results from a single experiment.
+    """
+    # JA: FIX THIS refer to actual saved file based on strat name
+    results = pd.read_csv("csvlogs/eval_results.csv")
+    # results = pd.read_csv(results)
+    results = results.groupby(["eval_exp", "training_exp"]).last().reset_index()
+
+    results = [
+        results[results["eval_exp"] == i][
+            ["training_exp", "eval_accuracy", "eval_loss"]
+        ].reset_index()
+        for i in range(n_experiences)
+    ]
+
+    res = [res["eval_accuracy"] for res in results]
+    if repeat_vals:
+        res = [list(np.repeat(val, repeat_vals)) for val in res]
+
+    for r in res:
+        ax.plot(r, label=f"{method_name}")
+
+    if metric == "acc":
+        ax.set_title(method_name)
+
+    return res
 
 
 def plot_single_legend(fig):
