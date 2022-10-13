@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 from torch import optim
 from pathlib import Path
-from avalanche.benchmarks.utils import AvalancheSubset
+
+# from avalanche.benchmarks.utils import AvalancheSubset
 
 from avalanche.training.plugins import EvaluationPlugin
 from avalanche.evaluation.metrics import (
@@ -95,24 +96,12 @@ def train_model(x, model, n_epochs=4, lr=0.001, momentum=0.9):
     return None
 
 
-def shrink_dataset(ava_dataset, idx):
-    if isinstance(idx, int):
-        idx = list(range(idx))
-
-    for i in range(len(ava_dataset.train_stream)):
-        ava_dataset.train_stream[i] = AvalancheSubset(
-            ava_dataset.train_stream[i].dataset, idx
-        )
-
-    print(len(ava_dataset.train_stream[0].dataset))
-
-    return ava_dataset
-
-
 def get_eval_plugin(strategy_name, csv=True, text=True):
 
     loggers = []
     if text:
+        path = Path("log") / strategy_name
+        path.mkdir(exist_ok=True)
         loggers.append(TextLogger(open(Path("log") / strategy_name / "log.txt", "a+")))
     if csv:
         loggers.append(CSVLogger(Path("log") / strategy_name))
