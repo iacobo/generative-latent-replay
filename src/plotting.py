@@ -77,7 +77,7 @@ def plot_results(
     Plots results from a single experiment.
     """
     # JA: FIX THIS refer to actual saved file based on strat name
-    results = pd.read_csv("csvlogs/eval_results.csv")
+    results = pd.read_csv(f"csvlogs/{method_name}/eval_results.csv")
     # results = pd.read_csv(results)
     results = results.groupby(["eval_exp", "training_exp"]).last().reset_index()
 
