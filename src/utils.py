@@ -99,8 +99,12 @@ def shrink_dataset(ava_dataset, idx):
     if isinstance(idx, int):
         idx = list(range(idx))
 
-    for exp in ava_dataset.train_stream:
-        exp.dataset = AvalancheSubset(exp.dataset, idx)
+    for i in range(len(ava_dataset.train_stream)):
+        ava_dataset.train_stream[i] = AvalancheSubset(
+            ava_dataset.train_stream[i].dataset, idx
+        )
+
+    print(len(ava_dataset.train_stream[0].dataset))
 
     return ava_dataset
 
@@ -109,9 +113,9 @@ def get_eval_plugin(strategy_name, csv=True, text=True):
 
     loggers = []
     if text:
-        loggers.append(TextLogger(open(Path("log") / f"log_{strategy_name}.txt", "a+")))
+        loggers.append(TextLogger(open(Path("log") / strategy_name / "log.txt", "a+")))
     if csv:
-        loggers.append(CSVLogger(Path("log") / "csv_logs" / strategy_name))
+        loggers.append(CSVLogger(Path("log") / strategy_name))
 
     eval_plugin = EvaluationPlugin(
         accuracy_metrics(epoch=True, experience=True, stream=True),

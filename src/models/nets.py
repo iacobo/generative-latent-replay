@@ -94,7 +94,7 @@ class SimpleMLP(nn.Module, BaseModel):
     It can be configured to have multiple layers and dropout.
     """
 
-    def __init__(self, num_classes=10, hidden_size=512, hidden_layers=1, drop_rate=0):
+    def __init__(self, num_classes=10, hidden_size=100, hidden_layers=2, drop_rate=0):
         """
         :param num_classes:   output size
         :param hidden_size:   hidden layer size
