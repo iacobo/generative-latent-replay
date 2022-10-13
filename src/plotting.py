@@ -65,7 +65,6 @@ def plot_results_old(
 
 
 def plot_results(
-    results,
     method_name,
     ax,
     n_experiences,
@@ -122,7 +121,7 @@ def plot_single_legend(fig):
 
 
 def plot_multiple_results(
-    results, titles, n_experiences, mode="train", repeat_vals=10, loss=False
+    titles, n_experiences, mode="train", repeat_vals=10, loss=False
 ):
 
     fig, axes = plt.subplots(
@@ -133,12 +132,10 @@ def plot_multiple_results(
         figsize=(2 * len(titles), 6),
     )
 
-    for i, (res, name) in enumerate(zip(results, titles)):
-        plot_results(res, name, axes[0][i], n_experiences, "acc", mode, repeat_vals)
+    for i, name in enumerate(titles):
+        plot_results(name, axes[0][i], n_experiences, "acc", mode, repeat_vals)
         if loss:
-            plot_results(
-                res, name, axes[1][i], n_experiences, "loss", mode, repeat_vals
-            )
+            plot_results(name, axes[1][i], n_experiences, "loss", mode, repeat_vals)
 
     plot_single_legend(fig)
     fig.axes[0].set_ylabel(f"{mode.capitalize()} Accuracy")

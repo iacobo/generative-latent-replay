@@ -109,9 +109,9 @@ def get_eval_plugin(strategy_name, csv=True, text=True):
 
     loggers = []
     if text:
-        loggers.append(TextLogger(open(Path("log") / strategy_name / "log.txt", "a")))
+        loggers.append(TextLogger(open(Path("log") / f"log_{strategy_name}.txt", "a+")))
     if csv:
-        loggers.append(CSVLogger(Path("csv_logs") / strategy_name))
+        loggers.append(CSVLogger(Path("log") / "csv_logs" / strategy_name))
 
     eval_plugin = EvaluationPlugin(
         accuracy_metrics(epoch=True, experience=True, stream=True),
