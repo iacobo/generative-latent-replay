@@ -120,11 +120,16 @@ def plot_single_legend(fig):
     )
 
 
+def get_strategy_names():
+    return [f.name for f in Path("./log").iterdir() if f.is_dir()]
+
+
 def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
 
     # Names of methods with results to plot.
-    names = [f.name for f in Path("./log").iterdir() if f.is_dir()]
+    names = get_strategy_names()
 
+    # Build figure
     fig, axes = plt.subplots(
         2,
         len(names),
@@ -133,13 +138,40 @@ def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
         figsize=(2 * len(names), 6),
     )
 
+    # Plot results
     for i, name in enumerate(names):
         plot_results(name, axes[0][i], "acc", mode, repeat_vals)
         if loss:
             plot_results(name, axes[1][i], "loss", mode, repeat_vals)
 
+    # Titles, labels etc.
+    plt.xlabel("Epoch")
     plot_single_legend(fig)
     fig.axes[0].set_ylabel(f"{mode.capitalize()} Accuracy")
+
     if loss:
         fig.axes[1].set_ylabel(f"{mode.capitalize()} Loss")
-    plt.xlabel("Epoch")
+
+
+def results_to_df(strategy_names, results, latex=False):
+    """
+    Args:
+        results (dict): Dictionary of results from the experiment.
+
+    Returns:
+        pd.DataFrame: Results as a DataFrame.
+    """
+
+    strategy_names = get_strategy_names()
+
+    final_avg_accs = [
+        res[-1]["Top1_Acc_Stream/eval_phase/train_stream/Task000"] for res in results
+    ]
+    df = pd.DataFrame({"Final Avg Acc": final_avg_accs}, index=strategy_names)
+
+    df = df.style.highlight_max(axis=1, props="bfseries: ;")
+
+    if latex:
+        df = df.to_latex()
+
+    return df

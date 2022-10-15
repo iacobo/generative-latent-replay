@@ -1,7 +1,6 @@
 import random
 import torch
 import numpy as np
-import pandas as pd
 from torch import optim
 from pathlib import Path
 
@@ -54,28 +53,6 @@ def set_seed(seed):
         torch.backends.cudnn.deterministic = True
 
 
-def results_to_df(strategy_names, results, latex=False):
-    """
-    Args:
-        results (dict): Dictionary of results from the experiment.
-
-    Returns:
-        pd.DataFrame: Results as a DataFrame.
-    """
-
-    final_avg_accs = [
-        res[-1]["Top1_Acc_Stream/eval_phase/train_stream/Task000"] for res in results
-    ]
-    df = pd.DataFrame({"Final Avg Acc": final_avg_accs}, index=strategy_names)
-
-    df = df.style.highlight_max(axis=1, props="bfseries: ;")
-
-    if latex:
-        df = df.to_latex()
-
-    return df
-
-
 def train_model(x, model, n_epochs=4, lr=0.001, momentum=0.9):
 
     gmm = model  # models.GMM()
@@ -99,12 +76,13 @@ def train_model(x, model, n_epochs=4, lr=0.001, momentum=0.9):
 def get_eval_plugin(strategy_name, csv=True, text=True):
 
     loggers = []
+    base_path = Path("log") / strategy_name
+    base_path.mkdir(exist_ok=True)
+
     if text:
-        path = Path("log") / strategy_name
-        path.mkdir(exist_ok=True)
-        loggers.append(TextLogger(open(Path("log") / strategy_name / "log.txt", "a+")))
+        loggers.append(TextLogger(open(base_path / "log.txt", "a+")))
     if csv:
-        loggers.append(CSVLogger(Path("log") / strategy_name))
+        loggers.append(CSVLogger(base_path))
 
     eval_plugin = EvaluationPlugin(
         accuracy_metrics(epoch=True, experience=True, stream=True),
