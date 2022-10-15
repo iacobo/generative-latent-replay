@@ -25,7 +25,7 @@ class GenerativeLatentReplay(LatentReplay):
         criterion=None,
         lr: float = 0.001,
         momentum=0.9,
-        l2=0.0005,
+        weight_decay=0.0005,
         train_epochs: int = 4,
         rm_sz: int = 1500,
         freeze_below_layer: str = "end_features.0",
@@ -46,7 +46,7 @@ class GenerativeLatentReplay(LatentReplay):
             case the cross entropy loss is used.
         :param lr: The learning rate (SGD optimizer).
         :param momentum: The momentum (SGD optimizer).
-        :param l2: The L2 penalty used for weight decay.
+        :param weight_decay: The L2 penalty used for weight decay.
         :param train_epochs: The number of training epochs. Defaults to 4.
         :param rm_sz: The size of the replay buffer. The replay buffer is shared
             across classes. Defaults to 1500.
@@ -75,7 +75,7 @@ class GenerativeLatentReplay(LatentReplay):
             model=model,
             lr=lr,
             momentum=momentum,
-            l2=l2,
+            weight_decay=weight_decay,
             criterion=criterion,
             latent_layer_num=latent_layer_num,
             rm_sz=rm_sz,

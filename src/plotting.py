@@ -75,7 +75,7 @@ def plot_results(
     """
     Plots results from a single experiment.
     """
-    results = pd.read_csv(f"log/{method_name}/eval_results.csv")
+    results = pd.read_csv(f"results/{method_name}/eval_results.csv")
     results = results.groupby(["eval_exp", "training_exp"]).last().reset_index()
 
     n_experiences = len(results["eval_exp"].unique())
@@ -121,7 +121,7 @@ def plot_single_legend(fig):
 
 
 def get_strategy_names():
-    return [f.name for f in Path("./log").iterdir() if f.is_dir()]
+    return [f.name for f in Path("./results").iterdir() if f.is_dir()]
 
 
 def plot_multiple_results(mode="train", repeat_vals=10, loss=False):

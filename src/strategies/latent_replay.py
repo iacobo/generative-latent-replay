@@ -31,7 +31,7 @@ class LatentReplay(SupervisedTemplate):
         criterion=None,
         lr: float = 0.001,
         momentum=0.9,
-        l2=0.0005,
+        weight_decay=0.0005,
         train_epochs: int = 4,
         rm_sz: int = 1500,
         freeze_below_layer: str = "end_features.0",
@@ -51,7 +51,7 @@ class LatentReplay(SupervisedTemplate):
             case the cross entropy loss is used.
         :param lr: The learning rate (SGD optimizer).
         :param momentum: The momentum (SGD optimizer).
-        :param l2: The L2 penalty used for weight decay.
+        :param weight_decay: The L2 penalty used for weight decay.
         :param train_epochs: The number of training epochs. Defaults to 4.
         :param rm_sz: The size of the replay buffer. The replay buffer is shared
             across classes. Defaults to 1500.
@@ -79,13 +79,15 @@ class LatentReplay(SupervisedTemplate):
         # Model setup
         model = FrozenNet(model=model, latent_layer_num=latent_layer_num)
 
-        optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
+        optimizer = SGD(
+            model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay
+        )
 
         if criterion is None:
             criterion = CrossEntropyLoss()
 
         self.lr = lr
-        self.l2 = l2
+        self.weight_decay = weight_decay
         self.momentum = momentum
         self.rm = None
         self.rm_sz = rm_sz
@@ -118,7 +120,7 @@ class LatentReplay(SupervisedTemplate):
                 self.model.parameters(),
                 lr=self.lr,
                 momentum=self.momentum,
-                weight_decay=self.l2,
+                weight_decay=self.weight_decay,
             )
 
         # super()... will run S.I. and CWR* plugin callbacks
@@ -130,7 +132,7 @@ class LatentReplay(SupervisedTemplate):
         """
         Called after the dataset instantiation. Initialize the data loader.
 
-        For AR1 a "custom" dataloader is used: instead of using
+        A "custom" dataloader is used: instead of using
         `self.train_mb_size` as the batch size, the data loader batch size will
         be computed ad `self.train_mb_size - latent_mb_size`. `latent_mb_size`
         is in turn computed as:

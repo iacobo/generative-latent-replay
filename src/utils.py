@@ -76,13 +76,13 @@ def train_model(x, model, n_epochs=4, lr=0.001, momentum=0.9):
 def get_eval_plugin(strategy_name, csv=True, text=True):
 
     loggers = []
-    base_path = Path("log") / strategy_name
+    base_path = Path("results")
     base_path.mkdir(exist_ok=True)
 
     if text:
         loggers.append(TextLogger(open(base_path / "log.txt", "a+")))
     if csv:
-        loggers.append(CSVLogger(base_path))
+        loggers.append(CSVLogger(base_path / strategy_name))
 
     eval_plugin = EvaluationPlugin(
         accuracy_metrics(epoch=True, experience=True, stream=True),
@@ -97,3 +97,11 @@ def get_eval_plugin(strategy_name, csv=True, text=True):
     )
 
     return eval_plugin
+
+
+def close_loggers(strategy):
+    for logger in strategy.evaluator.loggers:
+        try:
+            logger.close()
+        except AttributeError:
+            pass
