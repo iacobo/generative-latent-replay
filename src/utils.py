@@ -109,8 +109,11 @@ def close_loggers(strategy):
             pass
 
 
-def get_transforms(resize=False, to_tensor=True, n_channels=False, flatten=False):
+def get_transforms(
+    resize=False, to_tensor=True, normalise=False, n_channels=False, flatten=False
+):
     transforms = []
+
     # Resize image
     if resize:
         if isinstance(resize, int):
@@ -120,6 +123,12 @@ def get_transforms(resize=False, to_tensor=True, n_channels=False, flatten=False
     # Convert image to tensor
     if to_tensor:
         transforms.append(T.ToTensor())
+
+    # Normalise image as expected by imagenet-pretrained PyTorch models
+    if normalise:
+        transforms.append(
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        )
 
     # Change 2d to greyscale 3d
     if n_channels == 1:
