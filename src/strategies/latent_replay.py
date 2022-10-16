@@ -1,4 +1,5 @@
 from typing import Optional, List
+import warnings
 
 import torch
 from torch import Tensor
@@ -72,6 +73,12 @@ class LatentReplay(SupervisedTemplate):
             `eval` is called every `eval_every` epochs and at the end of the
             learning experience.
         """
+
+        warnings.warn(
+            "LatentReplay and GenerativeLatentReplay will only recognise "
+            "modules defined in __init__. "
+            "Modules defined in forward will be ignored."
+        )
 
         if plugins is None:
             plugins = []

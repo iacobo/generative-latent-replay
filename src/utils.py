@@ -1,8 +1,10 @@
-import random
 import torch
 import numpy as np
+import random
+
 from torch import optim
 from pathlib import Path
+from torchvision import transforms as T
 
 # from avalanche.benchmarks.utils import AvalancheSubset
 
@@ -105,3 +107,30 @@ def close_loggers(strategy):
             logger.close()
         except AttributeError:
             pass
+
+
+def get_transforms(resize=False, to_tensor=True, n_channels=False, flatten=False):
+    transforms = []
+    # Resize image
+    if resize:
+        if isinstance(resize, int):
+            resize = (resize, resize)
+        transforms.append(T.Resize(resize))
+
+    # Convert image to tensor
+    if to_tensor:
+        transforms.append(T.ToTensor())
+
+    # Change 2d to greyscale 3d
+    if n_channels == 1:
+        transforms.append(T.Lambda(lambda x: x.unsqueeze(0)))
+
+    # Change greyscale to n channel (3 = rgb)
+    if n_channels > 1:
+        transforms.append(T.Lambda(lambda x: x.repeat(n_channels, 1, 1)))
+
+    # Flatten tensor
+    if flatten:
+        transforms.append(T.Lambda(torch.flatten))
+
+    return T.Compose(transforms)

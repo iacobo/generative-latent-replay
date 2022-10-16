@@ -67,6 +67,7 @@ class GenerativeLatentReplay(LatentReplay):
             `eval` is called every `eval_every` epochs and at the end of the
             learning experience.
         """
+
         self.generator = generator
         if samplers is None:
             self.samplers = []
