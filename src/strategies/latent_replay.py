@@ -58,7 +58,8 @@ class LatentReplay(SupervisedTemplate):
             across classes. Defaults to 1500.
         :param freeze_below_layer: A string describing the name of the layer
             to use while freezing the lower (nearest to the input) part of the
-            model. The given layer is not frozen (exclusive).
+            model. The given layer is not frozen (exclusive). Please ensure this
+            layer has a grad function. Defaults to "end_features.0".
         :param latent_layer_num: The number of the layer to use as the Latent
             Replay Layer. Usually this is the same of `freeze_below_layer`.
         :param train_mb_size: The train minibatch size. Defaults to 128.
@@ -118,9 +119,15 @@ class LatentReplay(SupervisedTemplate):
         )
 
     def _before_training_exp(self, **kwargs):
+        self.model.eval()
+        self.model.end_features.train()
+
         # Freeze model backbone during subsequent experiences
         if self.clock.train_exp_counter > 0:
-            freeze_up_to(self.model, self.freeze_below_layer)
+            frozen_layers, frozen_parameters = freeze_up_to(
+                self.model, self.freeze_below_layer
+            )
+            print(f"Frozen layers:\n {frozen_layers}")
 
             # Adapt the model and optimizer
             self.optimizer = SGD(
@@ -211,7 +218,7 @@ class LatentReplay(SupervisedTemplate):
             self._before_forward(**kwargs)
 
             # JA:
-            if False and mb_it == 0:
+            if mb_it == 0:
                 utils.render_model(
                     lat_mb_x, self.model, self.mb_x, self.clock.train_exp_counter
                 )

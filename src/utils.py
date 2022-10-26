@@ -5,6 +5,7 @@ import random
 from torch import optim
 from pathlib import Path
 from torchvision import transforms as T
+from torchviz import make_dot
 
 # from avalanche.benchmarks.utils import AvalancheSubset
 
@@ -143,3 +144,17 @@ def get_transforms(
         transforms.append(T.Lambda(torch.flatten))
 
     return T.Compose(transforms)
+
+
+def render_model(lat_mb_x, model, mb_x, train_exp_counter):
+    """
+    Renders graph of model.
+    """
+    make_dot(
+        model(mb_x, latent_input=lat_mb_x, return_lat_acts=True),
+        params=dict(
+            list(model.named_parameters())
+            + [("mb_x", mb_x)]
+            + ([] if train_exp_counter == 0 else [("lat_mb_x", lat_mb_x)])
+        ),
+    ).render(f"torchviz_output_exp{train_exp_counter}", format="png")
