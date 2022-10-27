@@ -119,8 +119,6 @@ class LatentReplay(SupervisedTemplate):
         )
 
     def _before_training_exp(self, **kwargs):
-        self.model.eval()
-        self.model.end_features.train()
 
         # Freeze model backbone during subsequent experiences
         if self.clock.train_exp_counter > 0:

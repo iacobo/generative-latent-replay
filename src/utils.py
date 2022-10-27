@@ -157,4 +157,6 @@ def render_model(lat_mb_x, model, mb_x, train_exp_counter):
             + [("mb_x", mb_x)]
             + ([] if train_exp_counter == 0 else [("lat_mb_x", lat_mb_x)])
         ),
-    ).render(f"torchviz_output_exp{train_exp_counter}", format="png")
+    ).render(
+        f".assets/img/diagrams/torchviz_output_exp{train_exp_counter}", format="png"
+    )

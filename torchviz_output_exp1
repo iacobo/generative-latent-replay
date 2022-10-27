@@ -1,8 +1,0 @@
-digraph {
-	graph [size="12,12"]
-	node [align=left fontname=monospace fontsize=10 height=0.2 ranksep=0.1 shape=box style=filled]
-	2469387684096 [label="
- (64, 10)" fillcolor=darkolivegreen1]
-	2469142888176 [label="
- (58, 256, 6, 6)" fillcolor=darkolivegreen1]
-}
