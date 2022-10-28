@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from torchviz import make_dot
 from pathlib import Path
 
+plt.style.use("seaborn-whitegrid")
+
 
 def render_model(lat_mb_x, model, mb_x, train_exp_counter):
     """
@@ -97,7 +99,17 @@ def plot_results(
     if metric == "acc":
         ax.set_title(method_name)
 
+    simpleaxis(ax)
+
     return res
+
+
+def simpleaxis(ax):
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
 
 
 def plot_single_legend(fig):
@@ -114,14 +126,18 @@ def plot_single_legend(fig):
     fig.legend(
         labels_handles.values(),
         labels_handles.keys(),
-        loc="center left",
-        bbox_to_anchor=(1, 0.5),
+        # loc="lower center",
+        bbox_to_anchor=(0.575, 1.25),
         bbox_transform=plt.gcf().transFigure,
     )
 
 
 def get_strategy_names():
-    return [f.name for f in Path("./results").iterdir() if f.is_dir()]
+    # Ordering of methods to plot.
+    names = [f.name for f in Path("./results").iterdir() if f.is_dir()]
+    if "Naive" in names:
+        names = ["Naive"] + [name for name in names if name != "Naive"]
+    return names
 
 
 def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
@@ -130,12 +146,16 @@ def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
     names = get_strategy_names()
 
     # Build figure
+    if loss:
+        height = 2
+    else:
+        height = 1
     fig, axes = plt.subplots(
-        2,
+        height,
         len(names),
         sharey="row",
         squeeze=False,
-        figsize=(2 * len(names), 6),
+        figsize=(2 * len(names), height * 3),
     )
 
     # Plot results
@@ -145,7 +165,7 @@ def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
             plot_results(name, axes[1][i], "loss", mode, repeat_vals)
 
     # Titles, labels etc.
-    plt.xlabel("Epoch")
+    fig.supxlabel("Epoch")
     plot_single_legend(fig)
     fig.axes[0].set_ylabel(f"{mode.capitalize()} Accuracy")
 
