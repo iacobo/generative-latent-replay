@@ -8,7 +8,7 @@ dependencies:
   - python=3.11
   - pip
 
-  # Core scientific python
+  # Core scientific libs
   - numpy
   - pandas
   - matplotlib
@@ -18,9 +18,11 @@ dependencies:
   - pytorch::torchvision
   - cudatoolkit=11.3
 
-  # pip requirements for git hosted package
+  # pip only packages
   - pip:
+      # Prereqs
       - wheel
       - buildtools
+      # Packages
       - torchviz
       - avalanche-lib
