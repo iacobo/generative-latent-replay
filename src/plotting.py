@@ -79,10 +79,11 @@ def results_to_df(latex=False):
     results = [get_results_df(name) for name in strategy_names]
 
     final_avg_accs = [
-        np.mean([task_res["eval_accuracy"] for task_res in res]) for res in results
+        np.mean([task_res["eval_accuracy"].iloc[-1] for task_res in res])
+        for res in results
     ]
     final_avg_loss = [
-        np.mean([task_res["eval_loss"] for task_res in res]) for res in results
+        np.mean([task_res["eval_loss"].iloc[-1] for task_res in res]) for res in results
     ]
     df = pd.DataFrame(
         {"Final Avg Acc": final_avg_accs, "Final Avg Loss": final_avg_loss},
