@@ -5,9 +5,19 @@ import matplotlib.pyplot as plt
 from torchviz import make_dot
 from pathlib import Path
 
+# Plotting style
 plt.style.use("seaborn-whitegrid")
 
 
+def simpleaxis(ax):
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+
+# Model visualisation
 def render_model(lat_mb_x, model, mb_x, train_exp_counter):
     """
     Renders graph of model.
@@ -22,10 +32,20 @@ def render_model(lat_mb_x, model, mb_x, train_exp_counter):
     ).render(f"torchviz_output_exp{train_exp_counter}", format="png")
 
 
+# Data visualisation
 def plot_random_example():
     """Plots random examples from each class / dist."""
 
     raise NotImplementedError
+
+
+# Text results
+def get_strategy_names():
+    # Ordering of methods to plot.
+    names = [f.name for f in Path("./results").iterdir() if f.is_dir()]
+    if "Naive" in names:
+        names = ["Naive"] + [name for name in names if name != "Naive"]
+    return names
 
 
 def get_results_df(method_name):
@@ -43,6 +63,41 @@ def get_results_df(method_name):
     ]
 
     return results
+
+
+def results_to_df(latex=False):
+    """
+    Args:
+        results (dict): Dictionary of results from the experiment.
+
+    Returns:
+        pd.DataFrame: Results as a DataFrame.
+    """
+
+    strategy_names = get_strategy_names()
+
+    results = [get_results_df(name) for name in strategy_names]
+
+    final_avg_accs = [
+        np.mean([task_res["eval_accuracy"] for task_res in res]) for res in results
+    ]
+    final_avg_loss = [
+        np.mean([task_res["eval_loss"] for task_res in res]) for res in results
+    ]
+    df = pd.DataFrame(
+        {"Final Avg Acc": final_avg_accs, "Final Avg Loss": final_avg_loss},
+        index=strategy_names,
+    )
+
+    df = df.style.highlight_max(axis=1, props="bfseries: ;")
+
+    if latex:
+        df = df.to_latex()
+
+    return df
+
+
+# Results plots
 
 
 def plot_results(
@@ -70,42 +125,6 @@ def plot_results(
     simpleaxis(ax)
 
     return res
-
-
-def simpleaxis(ax):
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.grid(False)
-    ax.get_xaxis().tick_bottom()
-    ax.get_yaxis().tick_left()
-
-
-def plot_single_legend(fig):
-    """
-    For multiple subplots with shared labeled lines to plot,
-    combines legends to remove redundancy.
-    """
-    labels_handles = {
-        label: handle
-        for ax in fig.axes
-        for handle, label in zip(*ax.get_legend_handles_labels())
-    }
-
-    fig.legend(
-        labels_handles.values(),
-        labels_handles.keys(),
-        # loc="lower center",
-        bbox_to_anchor=(0.575, 1.25),
-        bbox_transform=plt.gcf().transFigure,
-    )
-
-
-def get_strategy_names():
-    # Ordering of methods to plot.
-    names = [f.name for f in Path("./results").iterdir() if f.is_dir()]
-    if "Naive" in names:
-        names = ["Naive"] + [name for name in names if name != "Naive"]
-    return names
 
 
 def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
@@ -141,33 +160,21 @@ def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
         fig.axes[1].set_ylabel(f"{mode.capitalize()} Loss")
 
 
-def results_to_df(latex=False):
+def plot_single_legend(fig):
     """
-    Args:
-        results (dict): Dictionary of results from the experiment.
-
-    Returns:
-        pd.DataFrame: Results as a DataFrame.
+    For multiple subplots with shared labeled lines to plot,
+    combines legends to remove redundancy.
     """
+    labels_handles = {
+        label: handle
+        for ax in fig.axes
+        for handle, label in zip(*ax.get_legend_handles_labels())
+    }
 
-    strategy_names = get_strategy_names()
-
-    results = [get_results_df(name) for name in strategy_names]
-
-    final_avg_accs = [
-        np.mean([task_res["eval_accuracy"] for task_res in res]) for res in results
-    ]
-    final_avg_loss = [
-        np.mean([task_res["eval_loss"] for task_res in res]) for res in results
-    ]
-    df = pd.DataFrame(
-        {"Final Avg Acc": final_avg_accs, "Final Avg Loss": final_avg_loss},
-        index=strategy_names,
+    fig.legend(
+        labels_handles.values(),
+        labels_handles.keys(),
+        # loc="lower center",
+        bbox_to_anchor=(0.575, 1.25),
+        bbox_transform=plt.gcf().transFigure,
     )
-
-    df = df.style.highlight_max(axis=1, props="bfseries: ;")
-
-    if latex:
-        df = df.to_latex()
-
-    return df
