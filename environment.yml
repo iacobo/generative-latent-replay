@@ -5,7 +5,7 @@ channels:
   - pytorch
 
 dependencies:
-  - python=3.9
+  - python=3.11
   - pip
 
   # Core scientific python
@@ -17,16 +17,6 @@ dependencies:
   - pytorch::pytorch
   - pytorch::torchvision
   - cudatoolkit=11.3
-
-  # Jupyter Environment
-  - papermill
-  - autopep8
-  - jupyterlab
-  - notebook
-  - ipython
-  - jupyter_contrib_nbextensions
-  - nbclean
-  - nbresuse
 
   # pip requirements for git hosted package
   - pip:
