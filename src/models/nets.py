@@ -1,8 +1,24 @@
-import torch
 from torch import nn
+import torch
+import torchvision
 
 from avalanche.models.base_model import BaseModel
 from avalanche.models.mobilenetv1 import remove_sequential
+
+
+def alexnet(small=True):
+    model = torchvision.models.alexnet(weights="DEFAULT")
+
+    # Add flatten layer from forward
+    model.avgpool = torch.nn.Sequential(model.avgpool, torch.nn.Flatten())
+    
+    # Reduce width of linear layers
+    if small:
+        model.classifier[-6] = torch.nn.Linear(9216, 1024)
+        model.classifier[-3] = torch.nn.Linear(1024, 256)
+        model.classifier[-1] = torch.nn.Linear(256, 10)
+
+    return model
 
 
 class FrozenNet(nn.Module):
