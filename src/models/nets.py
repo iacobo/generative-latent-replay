@@ -11,11 +11,25 @@ def alexnet(small=True):
 
     # Add flatten layer from forward
     model.avgpool = torch.nn.Sequential(model.avgpool, torch.nn.Flatten())
-    
+
     # Reduce width of linear layers
     if small:
         model.classifier[-6] = torch.nn.Linear(9216, 1024)
         model.classifier[-3] = torch.nn.Linear(1024, 256)
+        model.classifier[-1] = torch.nn.Linear(256, 10)
+
+    return model
+
+
+def mobilenetv2(small=True):
+    model = torchvision.models.mobilenet_v2(weights="DEFAULT")
+
+    # Add flatten layer from forward
+    model.classifier = torch.nn.Sequential(model.classifier, torch.nn.Flatten())
+
+    # Reduce width of linear layers
+    if small:
+        model.classifier[-3] = torch.nn.Linear(1280, 256)
         model.classifier[-1] = torch.nn.Linear(256, 10)
 
     return model

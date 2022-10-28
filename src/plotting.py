@@ -91,8 +91,8 @@ def plot_results(
     if repeat_vals:
         res = [list(np.repeat(val, repeat_vals)) for val in res]
 
-    for r in res:
-        ax.plot(r, label=f"{method_name}")
+    for i, r in enumerate(res, start=1):
+        ax.plot(r, label=f"Task {i}")
 
     if metric == "acc":
         ax.set_title(method_name)
