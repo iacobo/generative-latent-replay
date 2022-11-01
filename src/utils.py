@@ -160,3 +160,17 @@ def render_model(lat_mb_x, model, mb_x, train_exp_counter):
     ).render(
         f".assets/img/diagrams/torchviz_output_exp{train_exp_counter}", format="png"
     )
+
+
+def save_model(model, path, filename):
+    path.mkdir(exist_ok=True)
+    torch.save(model.state_dict(), path / filename)
+
+
+def load_model(model, path, filename):
+    # Loading model:
+    # model = TheModelClass(*args, **kwargs)
+    # model.load_state_dict(torch.load(path))
+
+    model.load_state_dict(torch.load(path / filename))
+    return model

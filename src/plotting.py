@@ -99,8 +99,6 @@ def results_to_df(latex=False):
 
 
 # Results plots
-
-
 def plot_results(
     method_name,
     ax,
@@ -112,8 +110,10 @@ def plot_results(
     Plots results from a single experiment.
     """
     results = get_results_df(method_name)
+    long_name = {"acc": "accuracy", "loss": "loss"}
 
-    res = [res["eval_accuracy"] for res in results]
+    res = [res[f"eval_{long_name[metric]}"] for res in results]
+
     if repeat_vals:
         res = [list(np.repeat(val, repeat_vals)) for val in res]
 
@@ -176,6 +176,6 @@ def plot_single_legend(fig):
         labels_handles.values(),
         labels_handles.keys(),
         # loc="lower center",
-        bbox_to_anchor=(0.575, 1.25),
+        bbox_to_anchor=(0.575, 0),
         bbox_transform=plt.gcf().transFigure,
     )
