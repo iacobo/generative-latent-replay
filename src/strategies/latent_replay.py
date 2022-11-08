@@ -13,7 +13,7 @@ from avalanche.training.plugins import (
 )
 from avalanche.training.utils import freeze_up_to
 from avalanche.training.plugins.evaluation import default_evaluator
-from avalanche.training.templates.supervised import SupervisedTemplate
+from avalanche.training.templates import SupervisedTemplate
 
 from src import utils
 from src.models import FrozenNet
@@ -164,7 +164,7 @@ class LatentReplay(SupervisedTemplate):
 
         current_batch_mb_size = self.train_mb_size
 
-        if self.clock.train_exp_counter > 0:
+        if True:  # self.clock.train_exp_counter > 0:
             train_patterns = len(self.adapted_dataset)
 
             if self.subsample_replays:

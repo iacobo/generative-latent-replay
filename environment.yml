@@ -3,20 +3,27 @@ name: env-glr
 channels:
   - conda-forge
   - pytorch
+  - nvidia
 
 dependencies:
-  - python=3.11
+  - python=3.10
   - pip
 
   # Core scientific libs
   - numpy
   - pandas
   - matplotlib
+  - scikit-learn
+  - python-graphviz
 
   # Machine Learning
   - pytorch::pytorch
+  - pytorch::pytorch-cuda=11.7
   - pytorch::torchvision
-  - cudatoolkit=11.3
+  - torchinfo
+
+  # Jupyter
+  - ipykernel
 
   # pip only packages
   - pip:
@@ -25,4 +32,4 @@ dependencies:
       - buildtools
       # Packages
       - torchviz
-      - avalanche-lib
+      - git+https://github.com/ContinualAI/avalanche.git

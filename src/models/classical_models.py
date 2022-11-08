@@ -49,7 +49,7 @@ class GMM(nn.Module):
 
 
 class GMM_sk:
-    def __init__(self, n_classes, cov_type="full", max_iter=80, random_state=102):
+    def __init__(self, n_classes, cov_type="full", max_iter=20, random_state=102):
         """
         Initialises a GMM.
 
