@@ -44,7 +44,7 @@ def get_strategy_names():
     # Ordering of methods to plot.
     names = [f.name for f in Path("./results").iterdir() if f.is_dir()]
     if "Naive" in names:
-        names = ["Naive"] + [name for name in names if name != "Naive"]
+        names = ["Naive"] + [name for name in sorted(names) if name != "Naive"]
     return names
 
 

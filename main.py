@@ -1,8 +1,3 @@
-# ## Generative Latent Replay
-# Experimental code to test GLRon benchmark continual learning problems.
-# i.e. normalising bottleneck representations and sampling from
-# fitted GMM on latent space.
-
 import argparse
 from pathlib import Path
 
@@ -17,8 +12,6 @@ from src import utils, models
 # Continual Learning strategies
 from avalanche.training import Naive, Replay, plugins
 from src.strategies import LatentReplay, GenerativeLatentReplay
-
-# Setup
 
 
 def main(args):
@@ -80,64 +73,67 @@ def main(args):
     }
 
     # Building base model
-    model = models.alexnet()
+    if args.model == "alexnet":
+        model = models.alexnet()
+    elif args.model == "mobilenet":
+        model = models.mobilenetv2()
+    elif args.model == "mlp":
+        model = models.SimpleMLP()
+    elif args.model == "cnn":
+        model = models.SimpleCNN()
 
     # Loading Continual Learning strategies for experiments
     # Training loop
 
-    if args.strategy == "latent replay":
+    if args.strategy == "Latent Replay":
         strategy = LatentReplay(
             model=model,
             rm_sz=replay_buffer_size,
             latent_layer_num=latent_layer_number,
-            evaluator=utils.get_eval_plugin("Latent Replay"),
+            evaluator=utils.get_eval_plugin(args.strategy),
             **strategy_kwargs,
             **sgd_kwargs,
         )
 
-    elif args.strategy == "glr":
+    elif args.strategy == "GLR":
         # Loading GLR model
         strategy = GenerativeLatentReplay(
             model=model,
             rm_sz=replay_buffer_size,
             latent_layer_num=latent_layer_number,
-            evaluator=utils.get_eval_plugin("GLR"),
+            evaluator=utils.get_eval_plugin(args.strategy),
             **strategy_kwargs,
             **sgd_kwargs,
         )
 
-    elif args.strategy == "naive":
+    elif args.strategy == "Naive":
         # Loading baseline (naive) model
         strategy = Naive(
             model=model,
             optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin("Naive"),
+            evaluator=utils.get_eval_plugin(args.strategy),
             **strategy_kwargs,
         )
 
-    elif args.strategy == "replay":
+    elif args.strategy == "Replay":
         # Loading benchmark (replay) model
         strategy = Replay(
             model=model,
             criterion=CrossEntropyLoss(),
             optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin("Replay"),
+            evaluator=utils.get_eval_plugin(args.strategy),
             **strategy_kwargs,
         )
 
-    folders = {
-        "GLR": "GLR",
-        "latent replay": "Latent Replay",
-        "naive": "Naive",
-        "replay": "Replay",
-    }
+    else:
+        raise ValueError("Strategy not implemented")
 
     for train_exp in train_stream:
         strategy.train(train_exp, eval_streams=[train_exp])
         strategy.eval(train_stream)
         utils.save_model(
             strategy.model,
-            Path(f"results/{folders[args.strategy]}"),
+            Path(f"results/{args.strategy}"),
             f"model_{train_exp.current_experience}.pt",
         )
 
@@ -150,12 +146,23 @@ if __name__ == "__main__":
     parser.add_argument(
         "--strategy",
         type=str,
-        default="glr",
+        default="GLR",
         help="Strategy to use",
-        choices=["latent replay", "glr", "naive", "replay"],
+        choices=["Latent Replay", "GLR", "Naive", "Replay"],
     )
     parser.add_argument("--experiment", type=str, default="PermutedMNIST")
-    parser.add_argument("--model", type=str, default="alexnet")
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="alexnet",
+        choices=["alexnet", "mobilenet", "mlp", "cnn"],
+    )
     parser.add_argument("--SEED", type=int, default=43769)
     args = parser.parse_args()
-    main(args)
+
+    if args.strategy == "all":
+        for strategy in ["Latent Replay", "GLR", "Naive", "Replay"]:
+            args.strategy = strategy
+            main(args)
+    else:
+        main(args)
