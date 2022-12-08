@@ -4,7 +4,7 @@ from pathlib import Path
 # ML imports
 from torch.nn import CrossEntropyLoss
 from torch.optim import SGD
-from avalanche.benchmarks.classic import PermutedMNIST
+from avalanche.benchmarks.classic import PermutedMNIST, RotatedMNIST
 
 # Local imports
 from src import utils, models
@@ -29,13 +29,21 @@ def main(args):
     transform = utils.get_transforms(resize=244, n_channels=3, normalise=True)
 
     # Load dataset
-    experiences = PermutedMNIST(
-        n_experiences=n_experiences,
-        train_transform=transform,
-        eval_transform=transform,
-        seed=args.SEED,
-        # rotations_list=[0, 60, 300],
-    )
+    if args.experiment == "PermutedMNIST":
+        experiences = PermutedMNIST(
+            n_experiences=n_experiences,
+            train_transform=transform,
+            eval_transform=transform,
+            seed=args.SEED,
+        )
+    elif args.experiment == "RotatedMNIST":
+        experiences = RotatedMNIST(
+            n_experiences=n_experiences,
+            train_transform=transform,
+            eval_transform=transform,
+            seed=args.SEED,
+            rotations_list=[0, 60, 300],
+        )
 
     # Train and test streams
     train_stream = experiences.train_stream
@@ -47,8 +55,13 @@ def main(args):
     replay_buffer_size = 6000
 
     # Frozen backbone
-    freeze_depth = 5
-    latent_layer_number = freeze_depth * 3 + 1
+    if args.latent_layer is None:
+        if args.model == "alexnet":
+            latent_layer_number = 16
+        elif args.model == "mobilenet":
+            latent_layer_number = 158
+    else:
+        latent_layer_number = args.latent_layer
 
     # SGD hyperparams
     sgd_kwargs = {
@@ -128,6 +141,7 @@ def main(args):
     else:
         raise ValueError("Strategy not implemented")
 
+        # rotations_list=[0, 60, 300],
     for train_exp in train_stream:
         strategy.train(train_exp, eval_streams=[train_exp])
         strategy.eval(train_stream)
@@ -150,14 +164,15 @@ if __name__ == "__main__":
         help="Strategy to use",
         choices=["Latent Replay", "GLR", "Naive", "Replay"],
     )
-    parser.add_argument("--experiment", type=str, default="PermutedMNIST")
     parser.add_argument(
         "--model",
         type=str,
         default="alexnet",
-        choices=["alexnet", "mobilenet", "mlp", "cnn"],
+        choices=["alexnet", "mobilenet", "efficientnet", "mlp", "cnn"],
     )
+    parser.add_argument("--experiment", type=str, default="RotatedMNIST")
     parser.add_argument("--SEED", type=int, default=43769)
+    parser.add_argument("--latent_layer", type=int, default=None)
     args = parser.parse_args()
 
     if args.strategy == "all":

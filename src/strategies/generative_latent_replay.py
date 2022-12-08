@@ -104,11 +104,14 @@ class GenerativeLatentReplay(LatentReplay):
         if self.generator == "gmm":
             n_classes = self.cur_y.unique().size(0)
             n_features = self.cur_acts.size(-1)
-            means_init = torch.tensor(
-                [x_copy[y_copy == i].mean(axis=0) for i in range(self.n_classes)]
-            )
+            means_init = torch.stack(
+                [x_copy[y_copy == i].mean(dim=0) for i in range(n_classes)]
+            ).unsqueeze(0)
             sampler = models.GMM(
-                n_components=n_classes, n_features=n_features, mu_init=means_init
+                n_components=n_classes,
+                n_features=n_features,
+                covariance_type="diag",
+                mu_init=means_init,
             )
         elif self.generator == "kmeans":
             sampler = models.KMeans()
@@ -122,7 +125,7 @@ class GenerativeLatentReplay(LatentReplay):
             raise NotImplementedError(f'Unknown generator "{self.generator}"')
 
         print(f"Training generator {self.clock.train_exp_counter}...")
-        sampler.train(x_copy, y_copy)
+        sampler.fit(x_copy)
         print("Generator trained.")
         self.samplers.append(sampler)
         rm_add = sampler.sample(h)

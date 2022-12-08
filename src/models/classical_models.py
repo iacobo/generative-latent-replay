@@ -49,7 +49,7 @@ class GMM_WIP(nn.Module):
 
 
 class GMM_sk:
-    def __init__(self, n_classes, cov_type="tied", max_iter=200, random_state=102):
+    def __init__(self, n_classes, cov_type="diag", max_iter=200, random_state=102):
         """
         Initialises a GMM.
 

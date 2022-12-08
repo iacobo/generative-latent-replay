@@ -6,17 +6,39 @@ from avalanche.models.base_model import BaseModel
 from avalanche.models.mobilenetv1 import remove_sequential
 
 
-def alexnet(small=True):
-    model = torchvision.models.alexnet(weights="DEFAULT")
-
-    # Add flatten layer from forward
-    model.avgpool = torch.nn.Sequential(model.avgpool, torch.nn.Flatten())
+def efficientnetv2(small=True):
+    model = torchvision.models.efficientnet_v2_s(weights="DEFAULT")
 
     # Reduce width of linear layers
     if small:
-        model.classifier[-6] = torch.nn.Linear(9216, 1024)
-        model.classifier[-3] = torch.nn.Linear(1024, 256)
-        model.classifier[-1] = torch.nn.Linear(256, 10)
+        model.classifier[-1] = torch.nn.Linear(1280, 10)
+
+    return model
+
+
+def alexnet(small=True, norm=False):
+    model = torchvision.models.alexnet(weights="DEFAULT")
+    
+    n_hid_feats = model.classifier[-6].in_features
+
+    # Add flatten layer from forward
+    model.avgpool = torch.nn.Sequential(
+        torch.nn.AdaptiveAvgPool2d((3, 3)),  # model.avgpool, 
+        torch.nn.Flatten())
+
+    # Reduce width of linear layers
+    if small:
+        n_hid_feats = 256*3*3
+        model.classifier[-6] = torch.nn.Linear(n_hid_feats, 512)
+        model.classifier[-3] = torch.nn.Linear(512, 128)
+        model.classifier[-1] = torch.nn.Linear(128, 10)
+
+    if norm:
+        model.classifier = (
+            model.classifier[:-6]
+            + nn.Sequential(nn.BatchNorm1d(n_hid_feats))
+            + model.classifier[-6:]
+        )
 
     return model
 
@@ -25,12 +47,11 @@ def mobilenetv2(small=True):
     model = torchvision.models.mobilenet_v2(weights="DEFAULT")
 
     # Add flatten layer from forward
-    model.classifier = torch.nn.Sequential(model.classifier, torch.nn.Flatten())
+    # model.classifier = torch.nn.Sequential(model.classifier, torch.nn.Flatten())
 
     # Reduce width of linear layers
     if small:
-        model.classifier[-3] = torch.nn.Linear(1280, 256)
-        model.classifier[-1] = torch.nn.Linear(256, 10)
+        model.classifier[-1] = torch.nn.Linear(1280, 10)
 
     return model
 
