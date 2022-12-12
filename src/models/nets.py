@@ -18,17 +18,17 @@ def efficientnetv2(small=True):
 
 def alexnet(small=True, norm=False):
     model = torchvision.models.alexnet(weights="DEFAULT")
-    
+
     n_hid_feats = model.classifier[-6].in_features
 
     # Add flatten layer from forward
     model.avgpool = torch.nn.Sequential(
-        torch.nn.AdaptiveAvgPool2d((3, 3)),  # model.avgpool, 
-        torch.nn.Flatten())
+        torch.nn.AdaptiveAvgPool2d((3, 3)), torch.nn.Flatten()  # model.avgpool,
+    )
 
     # Reduce width of linear layers
     if small:
-        n_hid_feats = 256*3*3
+        n_hid_feats = 256 * 3 * 3
         model.classifier[-6] = torch.nn.Linear(n_hid_feats, 512)
         model.classifier[-3] = torch.nn.Linear(512, 128)
         model.classifier[-1] = torch.nn.Linear(128, 10)

@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 from pathlib import Path
 
 # ML imports
@@ -23,7 +24,7 @@ def main(args):
 
     # Problem definition
     # Number of tasks
-    n_experiences = 3
+    n_experiences = 5
 
     # Transform data to format expected by model
     transform = utils.get_transforms(resize=244, n_channels=3, normalise=True)
@@ -37,17 +38,19 @@ def main(args):
             seed=args.SEED,
         )
     elif args.experiment == "RotatedMNIST":
+
+        rotations = list(np.linspace(0, 360, n_experiences + 1, dtype=int))[:-1]
         experiences = RotatedMNIST(
             n_experiences=n_experiences,
             train_transform=transform,
             eval_transform=transform,
             seed=args.SEED,
-            rotations_list=[0, 60, 300],
+            rotations_list=rotations,
         )
 
     # Train and test streams
     train_stream = experiences.train_stream
-    # test_stream = experiences.test_stream
+    test_stream = experiences.test_stream
 
     # Hyperparameters
 
@@ -145,6 +148,7 @@ def main(args):
     for train_exp in train_stream:
         strategy.train(train_exp, eval_streams=[train_exp])
         strategy.eval(train_stream)
+        strategy.eval(test_stream)
         utils.save_model(
             strategy.model,
             Path(f"results/{args.strategy}"),
@@ -162,7 +166,7 @@ if __name__ == "__main__":
         type=str,
         default="GLR",
         help="Strategy to use",
-        choices=["Latent Replay", "GLR", "Naive", "Replay"],
+        choices=["Latent Replay", "GLR", "Naive", "Replay", "all"],
     )
     parser.add_argument(
         "--model",
@@ -170,13 +174,13 @@ if __name__ == "__main__":
         default="alexnet",
         choices=["alexnet", "mobilenet", "efficientnet", "mlp", "cnn"],
     )
-    parser.add_argument("--experiment", type=str, default="RotatedMNIST")
+    parser.add_argument("--experiment", type=str, default="PermutedMNIST")
     parser.add_argument("--SEED", type=int, default=43769)
     parser.add_argument("--latent_layer", type=int, default=None)
     args = parser.parse_args()
 
     if args.strategy == "all":
-        for strategy in ["Latent Replay", "GLR", "Naive", "Replay"]:
+        for strategy in ["Naive", "Latent Replay", "GLR", "Replay"]:
             args.strategy = strategy
             main(args)
     else:
