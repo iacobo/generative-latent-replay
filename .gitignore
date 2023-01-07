@@ -132,5 +132,4 @@ dmypy.json
 .pyre/
 
 # Misc experimental files
-results/
 .assets/img/diagrams/
