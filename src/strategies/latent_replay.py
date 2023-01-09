@@ -121,11 +121,8 @@ class LatentReplay(SupervisedTemplate):
     def _before_training_exp(self, **kwargs):
 
         # Freeze model backbone during subsequent experiences
-        if self.clock.train_exp_counter > 0:
-            frozen_layers, frozen_parameters = freeze_up_to(
-                self.model, self.freeze_below_layer
-            )
-            print(f"Frozen layers:\n {frozen_layers}")
+        if True:  # self.clock.train_exp_counter > 0:
+            freeze_up_to(self.model, self.freeze_below_layer)
 
             # Adapt the model and optimizer
             self.optimizer = SGD(
