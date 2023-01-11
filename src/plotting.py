@@ -40,17 +40,17 @@ def plot_random_example():
 
 
 # Text results
-def get_strategy_names():
+def get_strategy_names(experiment):
     # Ordering of methods to plot.
-    names = [f.name for f in Path("./results").iterdir() if f.is_dir()]
+    names = [f.name for f in Path(f"./results/{experiment}").iterdir() if f.is_dir()]
     if "Naive" in names:
         names = ["Naive"] + [name for name in sorted(names) if name != "Naive"]
     return names
 
 
-def get_results_df(method_name):
+def get_results_df(method_name, experiment):
 
-    results = pd.read_csv(f"results/{method_name}/eval_results.csv")
+    results = pd.read_csv(f"results/{experiment}/{method_name}/eval_results.csv")
     results = results.groupby(["eval_exp", "training_exp"]).last().reset_index()
 
     n_experiences = len(results["eval_exp"].unique())
@@ -65,7 +65,7 @@ def get_results_df(method_name):
     return results
 
 
-def results_to_df(latex=False):
+def results_to_df(latex=False, experiment="PermutedMNIST"):
     """
     Args:
         results (dict): Dictionary of results from the experiment.
@@ -74,9 +74,9 @@ def results_to_df(latex=False):
         pd.DataFrame: Results as a DataFrame.
     """
 
-    strategy_names = get_strategy_names()
+    strategy_names = get_strategy_names(experiment)
 
-    results = [get_results_df(name) for name in strategy_names]
+    results = [get_results_df(name, experiment) for name in strategy_names]
 
     final_avg_accs = [
         np.mean([task_res["eval_accuracy"].iloc[-1] for task_res in res])
@@ -100,16 +100,12 @@ def results_to_df(latex=False):
 
 # Results plots
 def plot_results(
-    method_name,
-    ax,
-    metric="acc",
-    mode="train",
-    repeat_vals=False,
+    method_name, ax, experiment, metric="acc", mode="train", repeat_vals=False
 ):
     """
     Plots results from a single experiment.
     """
-    results = get_results_df(method_name)
+    results = get_results_df(method_name, experiment)
     long_name = {"acc": "accuracy", "loss": "loss"}
 
     res = [res[f"eval_{long_name[metric]}"] for res in results]
@@ -128,10 +124,12 @@ def plot_results(
     return res
 
 
-def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
+def plot_multiple_results(
+    mode="train", experiment="PermutedMNIST", repeat_vals=10, loss=False
+):
 
     # Names of methods with results to plot.
-    names = get_strategy_names()
+    names = get_strategy_names(experiment)
 
     # Build figure
     if loss:
@@ -148,9 +146,9 @@ def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
 
     # Plot results
     for i, name in enumerate(names):
-        plot_results(name, axes[0][i], "acc", mode, repeat_vals)
+        plot_results(name, axes[0][i], experiment, "acc", mode, repeat_vals)
         if loss:
-            plot_results(name, axes[1][i], "loss", mode, repeat_vals)
+            plot_results(name, axes[1][i], experiment, "loss", mode, repeat_vals)
 
     # Titles, labels etc.
     fig.supxlabel("Epoch")
