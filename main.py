@@ -11,7 +11,7 @@ from avalanche.benchmarks.classic import PermutedMNIST, RotatedMNIST
 from src import utils, models
 
 # Continual Learning strategies
-from avalanche.training import Naive, Replay, plugins
+from avalanche.training import Naive, Replay, EWC, plugins
 from src.strategies import LatentReplay, GenerativeLatentReplay
 
 
@@ -47,6 +47,9 @@ def main(args):
             seed=args.SEED,
             rotations_list=rotations,
         )
+
+    else:
+        raise ValueError("Experiment not implemented")
 
     # Train and test streams
     train_stream = experiences.train_stream
@@ -141,6 +144,17 @@ def main(args):
             **strategy_kwargs,
         )
 
+    elif args.strategy == "EWC":
+        # Loading benchmark (replay) model
+        strategy = EWC(
+            model=model,
+            criterion=CrossEntropyLoss(),
+            optimizer=SGD(model.parameters(), **sgd_kwargs),
+            evaluator=utils.get_eval_plugin(args.strategy),
+            ewc_lambda=1,
+            **strategy_kwargs,
+        )
+
     else:
         raise ValueError("Strategy not implemented")
 
@@ -160,13 +174,14 @@ def main(args):
 
 
 if __name__ == "__main__":
+    strats = ["Latent Replay", "GLR", "Naive", "Replay", "EWC"]
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--strategy",
         type=str,
         default="GLR",
         help="Strategy to use",
-        choices=["Latent Replay", "GLR", "Naive", "Replay", "all"],
+        choices=strats + ["all"],
     )
     parser.add_argument(
         "--model",
@@ -180,7 +195,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.strategy == "all":
-        for strategy in ["Naive", "Latent Replay", "GLR", "Replay"]:
+        for strategy in strats:
             args.strategy = strategy
             main(args)
     else:
