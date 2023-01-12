@@ -157,6 +157,9 @@ def plot_multiple_results(
 
     if loss:
         fig.axes[1].set_ylabel(f"{mode.capitalize()} Loss")
+        
+    fig.suptitle(f"{experiment.split('MNIST')[0]} MNIST", fontsize=16)
+    plt.tight_layout()
 
 
 def plot_single_legend(fig):
