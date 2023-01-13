@@ -66,6 +66,8 @@ def main(args):
             latent_layer_number = 16
         elif args.model == "mobilenet":
             latent_layer_number = 158
+        elif args.model == "lenet":
+            latent_layer_number = 5
     else:
         latent_layer_number = args.latent_layer
 
@@ -91,6 +93,8 @@ def main(args):
         ],
     }
 
+    evaluator = utils.get_eval_plugin(args.strategy, args.experiment)
+
     # Building base model
     if args.model == "alexnet":
         model = models.alexnet()
@@ -100,6 +104,8 @@ def main(args):
         model = models.SimpleMLP()
     elif args.model == "cnn":
         model = models.SimpleCNN()
+    elif args.model == "lenet":
+        model = models.LeNet()
 
     # Loading Continual Learning strategies for experiments
     # Training loop
@@ -109,7 +115,8 @@ def main(args):
             model=model,
             rm_sz=replay_buffer_size,
             latent_layer_num=latent_layer_number,
-            evaluator=utils.get_eval_plugin(args.strategy),
+            evaluator=evaluator,
+            pretrained=args.pretrained,
             **strategy_kwargs,
             **sgd_kwargs,
         )
@@ -120,7 +127,8 @@ def main(args):
             model=model,
             rm_sz=replay_buffer_size,
             latent_layer_num=latent_layer_number,
-            evaluator=utils.get_eval_plugin(args.strategy),
+            evaluator=evaluator,
+            pretrained=args.pretrained,
             **strategy_kwargs,
             **sgd_kwargs,
         )
@@ -130,7 +138,7 @@ def main(args):
         strategy = Naive(
             model=model,
             optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin(args.strategy),
+            evaluator=evaluator,
             **strategy_kwargs,
         )
 
@@ -140,7 +148,7 @@ def main(args):
             model=model,
             criterion=CrossEntropyLoss(),
             optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin(args.strategy),
+            evaluator=evaluator,
             **strategy_kwargs,
         )
 
@@ -150,7 +158,7 @@ def main(args):
             model=model,
             criterion=CrossEntropyLoss(),
             optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin(args.strategy),
+            evaluator=evaluator,
             ewc_lambda=1,
             **strategy_kwargs,
         )
@@ -187,11 +195,12 @@ if __name__ == "__main__":
         "--model",
         type=str,
         default="alexnet",
-        choices=["alexnet", "mobilenet", "efficientnet", "mlp", "cnn"],
+        choices=["alexnet", "mobilenet", "efficientnet", "lenet", "mlp", "cnn"],
     )
     parser.add_argument("--experiment", type=str, default="PermutedMNIST")
     parser.add_argument("--SEED", type=int, default=43769)
     parser.add_argument("--latent_layer", type=int, default=None)
+    parser.add_argument("--pretrained", action=argparse.BooleanOptionalAction)
     args = parser.parse_args()
 
     if args.strategy == "all":

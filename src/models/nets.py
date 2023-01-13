@@ -1,6 +1,7 @@
 from torch import nn
 import torch
 import torchvision
+import torch.nn.functional as F
 
 from avalanche.models.base_model import BaseModel
 from avalanche.models.mobilenetv1 import remove_sequential
@@ -172,4 +173,38 @@ class SimpleMLP(nn.Module, BaseModel):
     def get_features(self, x):
         x = x.contiguous()
         x = self.features(x)
+        return x
+
+
+class LeNet(nn.Module):
+
+    # network structure
+    def __init__(self):
+        super().__init__()
+        self.features = nn.Sequential()
+
+        self.features.add_module("conv1", nn.LazyConv2d(6, kernel_size=5, padding=2))
+        self.features.add_module("relu1", nn.ReLU(inplace=False))
+        self.features.add_module("MaxPool1", nn.MaxPool2d(2))
+        self.features.add_module("conv2", nn.LazyConv2d(16, kernel_size=5))
+        self.features.add_module("relu2", nn.ReLU(inplace=False))
+        self.features.add_module("MaxPool2", nn.MaxPool2d(2))
+        self.features.add_module("Flatten", nn.Flatten())
+
+        self.classifier = nn.Sequential()
+        self.classifier.add_module("FC1", nn.LazyLinear(120))
+        self.classifier.add_module("relu3", nn.ReLU(inplace=False))
+        self.classifier.add_module("FC2", nn.LazyLinear(84))
+        self.classifier.add_module("relu4", nn.ReLU(inplace=False))
+        self.classifier.add_module("FC3", nn.LazyLinear(10))
+
+    def forward(self, x):
+        """
+        One forward pass through the network.
+
+        Args:
+            x: input
+        """
+        x = self.features(x)
+        x = self.classifier(x)
         return x

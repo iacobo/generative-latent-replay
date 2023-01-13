@@ -38,6 +38,7 @@ class GenerativeLatentReplay(LatentReplay):
         plugins: Optional[List[SupervisedPlugin]] = None,
         evaluator: EvaluationPlugin = default_evaluator(),
         eval_every=-1,
+        pretrained: bool = False,
     ):
         """
         Creates an instance of the LatentReplay strategy.
@@ -88,6 +89,7 @@ class GenerativeLatentReplay(LatentReplay):
             plugins=plugins,
             evaluator=evaluator,
             eval_every=eval_every,
+            pretrained=pretrained,
         )
 
     def _after_training_exp(self, **kwargs):

@@ -76,10 +76,10 @@ def train_model(x, model, n_epochs=4, lr=0.001, momentum=0.9):
     return None
 
 
-def get_eval_plugin(strategy_name, csv=True, text=True):
+def get_eval_plugin(strategy_name, experiment, csv=True, text=True):
 
     loggers = []
-    base_path = Path("results")
+    base_path = Path("results") / experiment
     base_path.mkdir(exist_ok=True)
 
     if text:
