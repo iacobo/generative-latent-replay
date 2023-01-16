@@ -15,30 +15,30 @@ from avalanche.training import Naive, Replay, EWC, plugins
 from src.strategies import LatentReplay, GenerativeLatentReplay
 
 
-def main(args):
-    # Reproducibility
-    utils.set_seed(args.SEED)
+# Helper functions
+def get_model(model_name):
+    if model_name == "alexnet":
+        model = models.alexnet()
+    elif model_name == "mobilenet":
+        model = models.mobilenetv2()
+    elif model_name == "mlp":
+        model = models.SimpleMLP()
+    elif model_name == "cnn":
+        model = models.SimpleCNN()
 
-    # Reporting
-    eval_rate = 1
+    return model
 
-    # Problem definition
-    # Number of tasks
-    n_experiences = 5
 
-    # Transform data to format expected by model
-    transform = utils.get_transforms(resize=244, n_channels=3, normalise=True)
-
-    # Load dataset
-    if args.experiment == "PermutedMNIST":
+def get_experiences(experiment, n_experiences, transform):
+    if experiment == "PermutedMNIST":
         experiences = PermutedMNIST(
             n_experiences=n_experiences,
             train_transform=transform,
             eval_transform=transform,
             seed=args.SEED,
         )
-    elif args.experiment == "RotatedMNIST":
 
+    elif experiment == "RotatedMNIST":
         rotations = list(np.linspace(0, 360, n_experiences + 1, dtype=int))[:-1]
         experiences = RotatedMNIST(
             n_experiences=n_experiences,
@@ -51,6 +51,89 @@ def main(args):
     else:
         raise ValueError("Experiment not implemented")
 
+    return experiences
+
+
+def get_strategy(
+    strategy_name,
+    model,
+    sgd_kwargs,
+    strategy_kwargs,
+    replay_buffer_size,
+    latent_layer_number,
+):
+    if strategy_name == "Latent Replay":
+        strategy = LatentReplay(
+            model=model,
+            rm_sz=replay_buffer_size,
+            latent_layer_num=latent_layer_number,
+            evaluator=utils.get_eval_plugin(strategy_name),
+            **strategy_kwargs,
+            **sgd_kwargs,
+        )
+
+    elif strategy_name == "GLR":
+        # Loading GLR model
+        strategy = GenerativeLatentReplay(
+            model=model,
+            rm_sz=replay_buffer_size,
+            latent_layer_num=latent_layer_number,
+            evaluator=utils.get_eval_plugin(strategy_name),
+            **strategy_kwargs,
+            **sgd_kwargs,
+        )
+
+    elif strategy_name == "Naive":
+        # Loading baseline (naive) model
+        strategy = Naive(
+            model=model,
+            optimizer=SGD(model.parameters(), **sgd_kwargs),
+            evaluator=utils.get_eval_plugin(strategy_name),
+            **strategy_kwargs,
+        )
+
+    elif strategy_name == "Replay":
+        # Loading benchmark (replay) model
+        strategy = Replay(
+            model=model,
+            criterion=CrossEntropyLoss(),
+            optimizer=SGD(model.parameters(), **sgd_kwargs),
+            evaluator=utils.get_eval_plugin(strategy_name),
+            **strategy_kwargs,
+        )
+
+    elif strategy_name == "EWC":
+        # Loading benchmark (replay) model
+        strategy = EWC(
+            model=model,
+            criterion=CrossEntropyLoss(),
+            optimizer=SGD(model.parameters(), **sgd_kwargs),
+            evaluator=utils.get_eval_plugin(strategy_name),
+            ewc_lambda=1,
+            **strategy_kwargs,
+        )
+
+    else:
+        raise ValueError("Strategy not implemented")
+
+    return strategy
+
+
+def main(args):
+    # Reproducibility
+    utils.set_seed(args.SEED)
+
+    # Reporting
+    eval_rate = 1
+
+    # Problem definition
+    # Number of tasks
+    n_experiences = 5
+    # Transform data to format expected by model
+    transform = utils.get_transforms(resize=244, n_channels=3, normalise=True)
+
+    # Load dataset
+    experiences = get_experiences(args.experiment, n_experiences, transform)
     # Train and test streams
     train_stream = experiences.train_stream
     test_stream = experiences.test_stream
@@ -77,7 +160,7 @@ def main(args):
     }
 
     strategy_kwargs = {
-        "eval_every": eval_rate,
+        "eval_every": 1,
         "train_epochs": 40,
         "train_mb_size": 64,
         "eval_mb_size": 128,
@@ -92,80 +175,28 @@ def main(args):
     }
 
     # Building base model
-    if args.model == "alexnet":
-        model = models.alexnet()
-    elif args.model == "mobilenet":
-        model = models.mobilenetv2()
-    elif args.model == "mlp":
-        model = models.SimpleMLP()
-    elif args.model == "cnn":
-        model = models.SimpleCNN()
+    model = get_model(args.model)
 
     # Loading Continual Learning strategies for experiments
     # Training loop
 
-    if args.strategy == "Latent Replay":
-        strategy = LatentReplay(
-            model=model,
-            rm_sz=replay_buffer_size,
-            latent_layer_num=latent_layer_number,
-            evaluator=utils.get_eval_plugin(args.strategy),
-            **strategy_kwargs,
-            **sgd_kwargs,
-        )
+    strategy = get_strategy(
+        args.strategy,
+        model,
+        sgd_kwargs,
+        strategy_kwargs,
+        replay_buffer_size,
+        latent_layer_number,
+    )
 
-    elif args.strategy == "GLR":
-        # Loading GLR model
-        strategy = GenerativeLatentReplay(
-            model=model,
-            rm_sz=replay_buffer_size,
-            latent_layer_num=latent_layer_number,
-            evaluator=utils.get_eval_plugin(args.strategy),
-            **strategy_kwargs,
-            **sgd_kwargs,
-        )
-
-    elif args.strategy == "Naive":
-        # Loading baseline (naive) model
-        strategy = Naive(
-            model=model,
-            optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin(args.strategy),
-            **strategy_kwargs,
-        )
-
-    elif args.strategy == "Replay":
-        # Loading benchmark (replay) model
-        strategy = Replay(
-            model=model,
-            criterion=CrossEntropyLoss(),
-            optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin(args.strategy),
-            **strategy_kwargs,
-        )
-
-    elif args.strategy == "EWC":
-        # Loading benchmark (replay) model
-        strategy = EWC(
-            model=model,
-            criterion=CrossEntropyLoss(),
-            optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin(args.strategy),
-            ewc_lambda=1,
-            **strategy_kwargs,
-        )
-
-    else:
-        raise ValueError("Strategy not implemented")
-
-        # rotations_list=[0, 60, 300],
+    # rotations_list=[0, 60, 300],
     for train_exp in train_stream:
         strategy.train(train_exp, eval_streams=[train_exp])
         strategy.eval(train_stream)
         strategy.eval(test_stream)
         utils.save_model(
             strategy.model,
-            Path(f"results/{args.strategy}"),
+            Path(f"results/{args.experiment}/{strategy_name}"),
             f"model_{train_exp.current_experience}.pt",
         )
 
@@ -196,7 +227,7 @@ if __name__ == "__main__":
 
     if args.strategy == "all":
         for strategy in strats:
-            args.strategy = strategy
+            strategy_name = strategy
             main(args)
     else:
         main(args)

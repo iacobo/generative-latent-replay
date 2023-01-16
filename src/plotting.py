@@ -1,9 +1,11 @@
+import math
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from torchviz import make_dot
 from pathlib import Path
+from avalanche.benchmarks.classic import RotatedMNIST, PermutedMNIST
 
 # Plotting style
 plt.style.use("seaborn-whitegrid")
@@ -33,10 +35,36 @@ def render_model(lat_mb_x, model, mb_x, train_exp_counter):
 
 
 # Data visualisation
-def plot_random_example():
+def plot_random_example(n_examples, n_exp, experiment="PermutedMNIST"):
     """Plots random examples from each class / dist."""
 
-    raise NotImplementedError
+    fig, ax = plt.subplots(n_examples, n_exp, figsize=(5, 5))
+
+    # Dataset
+    if experiment == "PermutedMNIST":
+        experiences = PermutedMNIST(n_experiences=n_exp)
+    elif experiment == "RotatedMNIST":
+        experiences = RotatedMNIST(n_experiences=n_exp)
+
+    train_stream = experiences.train_stream
+
+    for i, train_exp in enumerate(train_stream, start=0):
+        for j in range(n_examples):
+            img = train_exp.dataset[j][0].numpy().squeeze()
+            ax[j][i].imshow(img)
+            # Remove gridlines and ticks
+            ax[j][i].grid(False)
+            ax[j][i].set_xticks([])
+            ax[j][i].set_yticks([])
+
+        ax[n_examples-1][i].set_xlabel(f"Experience {i}")
+
+    # Set labels and title
+    fig.supxlabel("Experiences")
+    fig.supylabel("Examples")
+    fig.suptitle(f"Examples from each experience for {experiment}", fontsize=16)
+    plt.tight_layout()
+    plt.show()
 
 
 # Text results
@@ -157,7 +185,7 @@ def plot_multiple_results(
 
     if loss:
         fig.axes[1].set_ylabel(f"{mode.capitalize()} Loss")
-        
+
     fig.suptitle(f"{experiment.split('MNIST')[0]} MNIST", fontsize=16)
     plt.tight_layout()
 
@@ -180,3 +208,9 @@ def plot_single_legend(fig):
         bbox_to_anchor=(0.575, 0),
         bbox_transform=plt.gcf().transFigure,
     )
+
+
+if __name__ == "__main__":
+
+    plot_random_example(4, 5)
+    plot_random_example(4, 5, "RotatedMNIST")
