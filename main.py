@@ -57,6 +57,7 @@ def get_experiences(experiment, n_experiences, transform):
 def get_strategy(
     strategy_name,
     model,
+    experiment,
     sgd_kwargs,
     strategy_kwargs,
     replay_buffer_size,
@@ -67,7 +68,7 @@ def get_strategy(
             model=model,
             rm_sz=replay_buffer_size,
             latent_layer_num=latent_layer_number,
-            evaluator=utils.get_eval_plugin(strategy_name),
+            evaluator=utils.get_eval_plugin(strategy_name, experiment),
             **strategy_kwargs,
             **sgd_kwargs,
         )
@@ -78,7 +79,7 @@ def get_strategy(
             model=model,
             rm_sz=replay_buffer_size,
             latent_layer_num=latent_layer_number,
-            evaluator=utils.get_eval_plugin(strategy_name),
+            evaluator=utils.get_eval_plugin(strategy_name, experiment),
             **strategy_kwargs,
             **sgd_kwargs,
         )
@@ -88,7 +89,7 @@ def get_strategy(
         strategy = Naive(
             model=model,
             optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin(strategy_name),
+            evaluator=utils.get_eval_plugin(strategy_name, experiment),
             **strategy_kwargs,
         )
 
@@ -98,7 +99,7 @@ def get_strategy(
             model=model,
             criterion=CrossEntropyLoss(),
             optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin(strategy_name),
+            evaluator=utils.get_eval_plugin(strategy_name, experiment),
             **strategy_kwargs,
         )
 
@@ -108,7 +109,7 @@ def get_strategy(
             model=model,
             criterion=CrossEntropyLoss(),
             optimizer=SGD(model.parameters(), **sgd_kwargs),
-            evaluator=utils.get_eval_plugin(strategy_name),
+            evaluator=utils.get_eval_plugin(strategy_name, experiment),
             ewc_lambda=1,
             **strategy_kwargs,
         )
@@ -141,7 +142,7 @@ def main(args):
     # Hyperparameters
 
     # Replays
-    replay_buffer_size = 6000
+    replay_buffer_size = args.buffer_size
 
     # Frozen backbone
     if args.latent_layer is None:
@@ -183,6 +184,7 @@ def main(args):
     strategy = get_strategy(
         args.strategy,
         model,
+        args.experiment,
         sgd_kwargs,
         strategy_kwargs,
         replay_buffer_size,
@@ -196,7 +198,7 @@ def main(args):
         strategy.eval(test_stream)
         utils.save_model(
             strategy.model,
-            Path(f"results/{args.experiment}/{strategy_name}"),
+            Path(f"results/{args.experiment}/{args.strategy}"),
             f"model_{train_exp.current_experience}.pt",
         )
 
@@ -220,10 +222,16 @@ if __name__ == "__main__":
         default="alexnet",
         choices=["alexnet", "mobilenet", "efficientnet", "lenet", "mlp", "cnn"],
     )
-    parser.add_argument("--experiment", type=str, default="PermutedMNIST")
+    parser.add_argument(
+        "--experiment",
+        type=str,
+        default="PermutedMNIST",
+        choices=["PermutedMNIST", "RotatedMNIST"],
+    )
     parser.add_argument("--SEED", type=int, default=43769)
     parser.add_argument("--latent_layer", type=int, default=None)
     parser.add_argument("--pretrained", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--buffer_size", type=int, default=6000)
     args = parser.parse_args()
 
     if args.strategy == "all":
