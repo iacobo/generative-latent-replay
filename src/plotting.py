@@ -155,7 +155,7 @@ def plot_results(
 
 def plot_final_avg_results(experiment="RotatedMNIST_buffer_size"):
 
-    fig, ax = plt.subplots(2, figsize=(2, 5))
+    fig, ax = plt.subplots(2, figsize=(2.75, 5))
     ax[0].set_title("Final Average Accuracy")
     ax[1].set_title("Final Average Loss")
 
@@ -169,8 +169,27 @@ def plot_final_avg_results(experiment="RotatedMNIST_buffer_size"):
     ax[0].set_ylim(0, 1)
     ax[1].set_ylim(0, 1.2)
 
-    simpleaxis(ax[0], grid=True)
-    simpleaxis(ax[1], grid=True)
+    # plt.xticks(res.index)
+
+    for ax, metric in zip(ax, ["Acc", "Loss"]):
+        ax.set_xlim(0, 32000)
+        simpleaxis(ax, grid=True)
+        # label x axis with buffer size
+        ax.set_xlabel("Buffer Size")
+        ax.set_ylabel(metric)
+
+        # Annotate each point with x value
+        for i in range(len(res)):
+            percent = (100 * res.index[i]) // 60000
+            x, y = res.index[i], res[f"Final Avg {metric}"].iloc[i]
+
+            ax.annotate(
+                f"{percent}%",
+                xy=(x, y),
+                xytext=(x, y + 0.05),
+            )
+
+    plt.tight_layout()
 
 
 def plot_multiple_results(
