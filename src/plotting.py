@@ -1,4 +1,3 @@
-import math
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,10 +10,11 @@ from avalanche.benchmarks.classic import RotatedMNIST, PermutedMNIST
 plt.style.use("seaborn-whitegrid")
 
 
-def simpleaxis(ax):
+def simpleaxis(ax, grid=False):
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.grid(False)
+    if not grid:
+        ax.grid(False)
     ax.get_xaxis().tick_bottom()
     ax.get_yaxis().tick_left()
 
@@ -57,7 +57,7 @@ def plot_random_example(n_examples, n_exp, experiment="PermutedMNIST"):
             ax[j][i].set_xticks([])
             ax[j][i].set_yticks([])
 
-        ax[n_examples-1][i].set_xlabel(f"Experience {i}")
+        ax[n_examples - 1][i].set_xlabel(f"Experience {i}")
 
     # Set labels and title
     fig.supxlabel("Experiences")
@@ -93,7 +93,7 @@ def get_results_df(method_name, experiment):
     return results
 
 
-def results_to_df(latex=False, experiment="PermutedMNIST"):
+def results_to_df(experiment="PermutedMNIST", latex=False, bold=False):
     """
     Args:
         results (dict): Dictionary of results from the experiment.
@@ -118,7 +118,8 @@ def results_to_df(latex=False, experiment="PermutedMNIST"):
         index=strategy_names,
     )
 
-    df = df.style.highlight_max(axis=1, props="bfseries: ;")
+    if bold:
+        df = df.style.highlight_max(axis=1, props="bfseries: ;")
 
     if latex:
         df = df.to_latex()
@@ -150,6 +151,26 @@ def plot_results(
     simpleaxis(ax)
 
     return res
+
+
+def plot_final_avg_results(experiment="RotatedMNIST_buffer_size"):
+
+    fig, ax = plt.subplots(2, figsize=(2, 5))
+    ax[0].set_title("Final Average Accuracy")
+    ax[1].set_title("Final Average Loss")
+
+    res = results_to_df(experiment=experiment)
+    res.index = res.index.str.replace("GLR_", "").astype(int)
+    res.sort_index(inplace=True)
+
+    ax[0].plot(res["Final Avg Acc"], linestyle="--", marker="o", label=res.index)
+    ax[1].plot(res["Final Avg Loss"], linestyle="--", marker="o", label=res.index)
+
+    ax[0].set_ylim(0, 1)
+    ax[1].set_ylim(0, 1.2)
+
+    simpleaxis(ax[0], grid=True)
+    simpleaxis(ax[1], grid=True)
 
 
 def plot_multiple_results(
