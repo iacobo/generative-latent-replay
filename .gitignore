@@ -133,3 +133,4 @@ dmypy.json
 
 # Misc experimental files
 .assets/img/diagrams/
+*/log.txt
