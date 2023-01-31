@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
     if args.strategy == "all":
         for strategy in strats:
-            strategy_name = strategy
+            args.strategy = strategy
             main(args)
     else:
         main(args)
