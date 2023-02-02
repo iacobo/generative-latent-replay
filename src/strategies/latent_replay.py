@@ -19,6 +19,8 @@ from src import utils
 from src.models import FrozenNet
 
 
+# Code built off of https://github.com/vlomonaco/ar1-pytorch
+
 class LatentReplay(SupervisedTemplate):
     """Latent Replay.
 
