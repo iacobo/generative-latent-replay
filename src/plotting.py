@@ -155,23 +155,27 @@ def plot_results(
 
 def plot_final_avg_results(experiment="RotatedMNIST_buffer_size"):
 
-    fig, ax = plt.subplots(2, figsize=(2.75, 5))
-    ax[0].set_title("Final Average Accuracy")
-    ax[1].set_title("Final Average Loss")
+    fig, ax = plt.subplots(1, 2, figsize=(5, 3.25), dpi=300)
+    fig.suptitle("Final average performance for GLR \n on Rotated MNIST")
 
     res = results_to_df(experiment=experiment)
     res.index = res.index.str.replace("GLR_", "").astype(int)
     res.sort_index(inplace=True)
-
-    ax[0].plot(res["Final Avg Acc"], linestyle="--", marker="o", label=res.index)
-    ax[1].plot(res["Final Avg Loss"], linestyle="--", marker="o", label=res.index)
 
     ax[0].set_ylim(0, 1)
     ax[1].set_ylim(0, 1.2)
 
     # plt.xticks(res.index)
 
-    for ax, metric in zip(ax, ["Acc", "Loss"]):
+    for ax, metric, colour in zip(ax, ["Acc", "Loss"], ["C0", "C4"]):
+        ax.plot(
+            res[f"Final Avg {metric}"],
+            linestyle="--",
+            marker="o",
+            color=colour,
+            label=res.index,
+        )
+
         ax.set_xlim(0, 32000)
         simpleaxis(ax, grid=True)
         # label x axis with buffer size
@@ -188,6 +192,16 @@ def plot_final_avg_results(experiment="RotatedMNIST_buffer_size"):
                 xy=(x, y),
                 xytext=(x, y + 0.05),
             )
+
+            if i == 1:
+                ax.plot(
+                    x,
+                    y,
+                    markeredgecolor="orange",
+                    fillstyle="none",
+                    marker="o",
+                    markersize=10,
+                )
 
     plt.tight_layout()
 
@@ -228,6 +242,7 @@ def plot_multiple_results(
 
     fig.suptitle(f"{experiment.split('MNIST')[0]} MNIST", fontsize=16)
     plt.tight_layout()
+    plt.savefig(f"results/plots/{experiment}_{mode}.png", dpi=300)
 
 
 def plot_single_legend(fig):
