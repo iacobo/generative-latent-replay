@@ -4,15 +4,17 @@ import matplotlib.pyplot as plt
 
 from torchviz import make_dot
 from pathlib import Path
+from avalanche.benchmarks.classic import RotatedMNIST, PermutedMNIST
 
 # Plotting style
 plt.style.use("seaborn-whitegrid")
 
 
-def simpleaxis(ax):
+def simpleaxis(ax, grid=False):
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.grid(False)
+    if not grid:
+        ax.grid(False)
     ax.get_xaxis().tick_bottom()
     ax.get_yaxis().tick_left()
 
@@ -33,24 +35,50 @@ def render_model(lat_mb_x, model, mb_x, train_exp_counter):
 
 
 # Data visualisation
-def plot_random_example():
+def plot_random_example(n_examples, n_exp, experiment="PermutedMNIST"):
     """Plots random examples from each class / dist."""
 
-    raise NotImplementedError
+    fig, ax = plt.subplots(n_examples, n_exp, figsize=(5, 5))
+
+    # Dataset
+    if experiment == "PermutedMNIST":
+        experiences = PermutedMNIST(n_experiences=n_exp)
+    elif experiment == "RotatedMNIST":
+        experiences = RotatedMNIST(n_experiences=n_exp)
+
+    train_stream = experiences.train_stream
+
+    for i, train_exp in enumerate(train_stream, start=0):
+        for j in range(n_examples):
+            img = train_exp.dataset[j][0].numpy().squeeze()
+            ax[j][i].imshow(img)
+            # Remove gridlines and ticks
+            ax[j][i].grid(False)
+            ax[j][i].set_xticks([])
+            ax[j][i].set_yticks([])
+
+        ax[n_examples - 1][i].set_xlabel(f"Experience {i}")
+
+    # Set labels and title
+    fig.supxlabel("Experiences")
+    fig.supylabel("Examples")
+    fig.suptitle(f"Examples from each experience for {experiment}", fontsize=16)
+    plt.tight_layout()
+    plt.show()
 
 
 # Text results
-def get_strategy_names():
+def get_strategy_names(experiment):
     # Ordering of methods to plot.
-    names = [f.name for f in Path("./results").iterdir() if f.is_dir()]
+    names = [f.name for f in Path(f"./results/{experiment}").iterdir() if f.is_dir()]
     if "Naive" in names:
-        names = ["Naive"] + [name for name in names if name != "Naive"]
+        names = ["Naive"] + [name for name in sorted(names) if name != "Naive"]
     return names
 
 
-def get_results_df(method_name):
+def get_results_df(method_name, experiment):
 
-    results = pd.read_csv(f"results/{method_name}/eval_results.csv")
+    results = pd.read_csv(f"results/{experiment}/{method_name}/eval_results.csv")
     results = results.groupby(["eval_exp", "training_exp"]).last().reset_index()
 
     n_experiences = len(results["eval_exp"].unique())
@@ -65,7 +93,7 @@ def get_results_df(method_name):
     return results
 
 
-def results_to_df(latex=False):
+def results_to_df(experiment="PermutedMNIST", latex=False, bold=False):
     """
     Args:
         results (dict): Dictionary of results from the experiment.
@@ -74,9 +102,9 @@ def results_to_df(latex=False):
         pd.DataFrame: Results as a DataFrame.
     """
 
-    strategy_names = get_strategy_names()
+    strategy_names = get_strategy_names(experiment)
 
-    results = [get_results_df(name) for name in strategy_names]
+    results = [get_results_df(name, experiment) for name in strategy_names]
 
     final_avg_accs = [
         np.mean([task_res["eval_accuracy"].iloc[-1] for task_res in res])
@@ -90,7 +118,8 @@ def results_to_df(latex=False):
         index=strategy_names,
     )
 
-    df = df.style.highlight_max(axis=1, props="bfseries: ;")
+    if bold:
+        df = df.style.highlight_max(axis=1, props="bfseries: ;")
 
     if latex:
         df = df.to_latex()
@@ -100,16 +129,12 @@ def results_to_df(latex=False):
 
 # Results plots
 def plot_results(
-    method_name,
-    ax,
-    metric="acc",
-    mode="train",
-    repeat_vals=False,
+    method_name, ax, experiment, metric="acc", mode="train", repeat_vals=False
 ):
     """
     Plots results from a single experiment.
     """
-    results = get_results_df(method_name)
+    results = get_results_df(method_name, experiment)
     long_name = {"acc": "accuracy", "loss": "loss"}
 
     res = [res[f"eval_{long_name[metric]}"] for res in results]
@@ -128,10 +153,65 @@ def plot_results(
     return res
 
 
-def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
+def plot_final_avg_results(experiment="RotatedMNIST_buffer_size"):
+
+    fig, ax = plt.subplots(1, 2, figsize=(5, 3.25), dpi=300)
+    fig.suptitle("Final average performance for GLR \n on Rotated MNIST")
+
+    res = results_to_df(experiment=experiment)
+    res.index = res.index.str.replace("GLR_", "").astype(int)
+    res.sort_index(inplace=True)
+
+    ax[0].set_ylim(0, 1)
+    ax[1].set_ylim(0, 1.2)
+
+    # plt.xticks(res.index)
+
+    for ax, metric, colour in zip(ax, ["Acc", "Loss"], ["C0", "C4"]):
+        ax.plot(
+            res[f"Final Avg {metric}"],
+            linestyle="--",
+            marker="o",
+            color=colour,
+            label=res.index,
+        )
+
+        ax.set_xlim(0, 32000)
+        simpleaxis(ax, grid=True)
+        # label x axis with buffer size
+        ax.set_xlabel("Buffer Size")
+        ax.set_ylabel(metric)
+
+        # Annotate each point with x value
+        for i in range(len(res)):
+            percent = (100 * res.index[i]) // 60000
+            x, y = res.index[i], res[f"Final Avg {metric}"].iloc[i]
+
+            ax.annotate(
+                f"{percent}%",
+                xy=(x, y),
+                xytext=(x, y + 0.05),
+            )
+
+            if i == 1:
+                ax.plot(
+                    x,
+                    y,
+                    markeredgecolor="orange",
+                    fillstyle="none",
+                    marker="o",
+                    markersize=10,
+                )
+
+    plt.tight_layout()
+
+
+def plot_multiple_results(
+    mode="train", experiment="PermutedMNIST", repeat_vals=10, loss=False
+):
 
     # Names of methods with results to plot.
-    names = get_strategy_names()
+    names = get_strategy_names(experiment)
 
     # Build figure
     if loss:
@@ -148,9 +228,9 @@ def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
 
     # Plot results
     for i, name in enumerate(names):
-        plot_results(name, axes[0][i], "acc", mode, repeat_vals)
+        plot_results(name, axes[0][i], experiment, "acc", mode, repeat_vals)
         if loss:
-            plot_results(name, axes[1][i], "loss", mode, repeat_vals)
+            plot_results(name, axes[1][i], experiment, "loss", mode, repeat_vals)
 
     # Titles, labels etc.
     fig.supxlabel("Epoch")
@@ -159,6 +239,10 @@ def plot_multiple_results(mode="train", repeat_vals=10, loss=False):
 
     if loss:
         fig.axes[1].set_ylabel(f"{mode.capitalize()} Loss")
+
+    fig.suptitle(f"{experiment.split('MNIST')[0]} MNIST", fontsize=16)
+    plt.tight_layout()
+    plt.savefig(f"results/plots/{experiment}_{mode}.png", dpi=300)
 
 
 def plot_single_legend(fig):
@@ -179,3 +263,9 @@ def plot_single_legend(fig):
         bbox_to_anchor=(0.575, 0),
         bbox_transform=plt.gcf().transFigure,
     )
+
+
+if __name__ == "__main__":
+
+    plot_random_example(4, 5)
+    plot_random_example(4, 5, "RotatedMNIST")

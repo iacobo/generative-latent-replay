@@ -1,22 +1,45 @@
 from torch import nn
 import torch
 import torchvision
+import torch.nn.functional as F
 
 from avalanche.models.base_model import BaseModel
 from avalanche.models.mobilenetv1 import remove_sequential
 
 
-def alexnet(small=True):
-    model = torchvision.models.alexnet(weights="DEFAULT")
-
-    # Add flatten layer from forward
-    model.avgpool = torch.nn.Sequential(model.avgpool, torch.nn.Flatten())
+def efficientnetv2(small=True):
+    model = torchvision.models.efficientnet_v2_s(weights="DEFAULT")
 
     # Reduce width of linear layers
     if small:
-        model.classifier[-6] = torch.nn.Linear(9216, 1024)
-        model.classifier[-3] = torch.nn.Linear(1024, 256)
-        model.classifier[-1] = torch.nn.Linear(256, 10)
+        model.classifier[-1] = torch.nn.Linear(1280, 10)
+
+    return model
+
+
+def alexnet(small=True, norm=False):
+    model = torchvision.models.alexnet(weights="DEFAULT")
+
+    n_hid_feats = model.classifier[-6].in_features
+
+    # Add flatten layer from forward
+    model.avgpool = torch.nn.Sequential(
+        torch.nn.AdaptiveAvgPool2d((3, 3)), torch.nn.Flatten()  # model.avgpool,
+    )
+
+    # Reduce width of linear layers
+    if small:
+        n_hid_feats = 256 * 3 * 3
+        model.classifier[-6] = torch.nn.Linear(n_hid_feats, 512)
+        model.classifier[-3] = torch.nn.Linear(512, 128)
+        model.classifier[-1] = torch.nn.Linear(128, 10)
+
+    if norm:
+        model.classifier = (
+            model.classifier[:-6]
+            + nn.Sequential(nn.BatchNorm1d(n_hid_feats))
+            + model.classifier[-6:]
+        )
 
     return model
 
@@ -25,12 +48,11 @@ def mobilenetv2(small=True):
     model = torchvision.models.mobilenet_v2(weights="DEFAULT")
 
     # Add flatten layer from forward
-    model.classifier = torch.nn.Sequential(model.classifier, torch.nn.Flatten())
+    # model.classifier = torch.nn.Sequential(model.classifier, torch.nn.Flatten())
 
     # Reduce width of linear layers
     if small:
-        model.classifier[-3] = torch.nn.Linear(1280, 256)
-        model.classifier[-1] = torch.nn.Linear(256, 10)
+        model.classifier[-1] = torch.nn.Linear(1280, 10)
 
     return model
 
@@ -151,4 +173,38 @@ class SimpleMLP(nn.Module, BaseModel):
     def get_features(self, x):
         x = x.contiguous()
         x = self.features(x)
+        return x
+
+
+class LeNet(nn.Module):
+
+    # network structure
+    def __init__(self):
+        super().__init__()
+        self.features = nn.Sequential()
+
+        self.features.add_module("conv1", nn.LazyConv2d(6, kernel_size=5, padding=2))
+        self.features.add_module("relu1", nn.ReLU(inplace=False))
+        self.features.add_module("MaxPool1", nn.MaxPool2d(2))
+        self.features.add_module("conv2", nn.LazyConv2d(16, kernel_size=5))
+        self.features.add_module("relu2", nn.ReLU(inplace=False))
+        self.features.add_module("MaxPool2", nn.MaxPool2d(2))
+        self.features.add_module("Flatten", nn.Flatten())
+
+        self.classifier = nn.Sequential()
+        self.classifier.add_module("FC1", nn.LazyLinear(120))
+        self.classifier.add_module("relu3", nn.ReLU(inplace=False))
+        self.classifier.add_module("FC2", nn.LazyLinear(84))
+        self.classifier.add_module("relu4", nn.ReLU(inplace=False))
+        self.classifier.add_module("FC3", nn.LazyLinear(10))
+
+    def forward(self, x):
+        """
+        One forward pass through the network.
+
+        Args:
+            x: input
+        """
+        x = self.features(x)
+        x = self.classifier(x)
         return x

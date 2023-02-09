@@ -38,6 +38,7 @@ class GenerativeLatentReplay(LatentReplay):
         plugins: Optional[List[SupervisedPlugin]] = None,
         evaluator: EvaluationPlugin = default_evaluator(),
         eval_every=-1,
+        pretrained: bool = False,
     ):
         """
         Creates an instance of the LatentReplay strategy.
@@ -88,6 +89,7 @@ class GenerativeLatentReplay(LatentReplay):
             plugins=plugins,
             evaluator=evaluator,
             eval_every=eval_every,
+            pretrained=pretrained,
         )
 
     def _after_training_exp(self, **kwargs):
@@ -96,10 +98,23 @@ class GenerativeLatentReplay(LatentReplay):
             self.cur_acts.size(0),
         )
 
+        # Copy of data for training the generator
+        x_copy = self.cur_acts.detach().clone()
+        y_copy = self.cur_y.detach().clone()
+
         # Initialising replay buffer
         if self.generator == "gmm":
             n_classes = self.cur_y.unique().size(0)
-            sampler = models.GMM(n_classes=n_classes)
+            n_features = self.cur_acts.size(-1)
+            means_init = torch.stack(
+                [x_copy[y_copy == i].mean(dim=0) for i in range(n_classes)]
+            ).unsqueeze(0)
+            sampler = models.GMM(
+                n_components=n_classes,
+                n_features=n_features,
+                covariance_type="diag",
+                mu_init=means_init,
+            )
         elif self.generator == "kmeans":
             sampler = models.KMeans()
         elif self.generator == "density":
@@ -112,9 +127,7 @@ class GenerativeLatentReplay(LatentReplay):
             raise NotImplementedError(f'Unknown generator "{self.generator}"')
 
         print(f"Training generator {self.clock.train_exp_counter}...")
-        sampler.train(
-            self.cur_acts.detach().cpu().numpy(), self.cur_y.detach().cpu().numpy()
-        )
+        sampler.fit(x_copy)
         print("Generator trained.")
         self.samplers.append(sampler)
         rm_add = sampler.sample(h)

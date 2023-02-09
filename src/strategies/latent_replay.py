@@ -13,13 +13,11 @@ from avalanche.training.plugins import (
 )
 from avalanche.training.utils import freeze_up_to
 from avalanche.training.plugins.evaluation import default_evaluator
-from avalanche.training.templates.supervised import SupervisedTemplate
+from avalanche.training.templates import SupervisedTemplate
 
 from src import utils
 from src.models import FrozenNet
 
-
-# Code built off of https://github.com/vlomonaco/ar1-pytorch
 
 class LatentReplay(SupervisedTemplate):
     """Latent Replay.
@@ -46,6 +44,7 @@ class LatentReplay(SupervisedTemplate):
         plugins: Optional[List[SupervisedPlugin]] = None,
         evaluator: EvaluationPlugin = default_evaluator(),
         eval_every=-1,
+        pretrained: bool = False,
     ):
         """
         Creates an instance of the LatentReplay strategy.
@@ -106,6 +105,7 @@ class LatentReplay(SupervisedTemplate):
         self.cur_y: Optional[Tensor] = None
         self.replay_mb_size = 0
         self.subsample_replays = subsample_replays
+        self.pretrained = pretrained
 
         super().__init__(
             model,
@@ -123,8 +123,11 @@ class LatentReplay(SupervisedTemplate):
     def _before_training_exp(self, **kwargs):
 
         # Freeze model backbone during subsequent experiences
-        if True:  # self.clock.train_exp_counter > 0:
-            freeze_up_to(self.model, self.freeze_below_layer)
+        if self.pretrained or self.clock.train_exp_counter > 0:
+            frozen_layers, frozen_parameters = freeze_up_to(
+                self.model, self.freeze_below_layer
+            )
+            print(f"Frozen layers:\n {frozen_layers}")
 
             # Adapt the model and optimizer
             self.optimizer = SGD(
@@ -163,7 +166,7 @@ class LatentReplay(SupervisedTemplate):
 
         current_batch_mb_size = self.train_mb_size
 
-        if self.clock.train_exp_counter > 0:
+        if True:  # self.clock.train_exp_counter > 0:
             train_patterns = len(self.adapted_dataset)
 
             if self.subsample_replays:
