@@ -15,8 +15,8 @@ from avalanche.training.utils import freeze_up_to
 from avalanche.training.plugins.evaluation import default_evaluator
 from avalanche.training.templates import SupervisedTemplate
 
-from src import utils
-from src.models import FrozenNet
+from .. import utils
+from ..models import FrozenNet
 
 
 class LatentReplay(SupervisedTemplate):
@@ -87,6 +87,8 @@ class LatentReplay(SupervisedTemplate):
 
         # Model setup
         model = FrozenNet(model=model, latent_layer_num=latent_layer_num)
+        # print(model.lat_features)
+        # print(model.end_features)
 
         optimizer = SGD(
             model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay
@@ -121,13 +123,11 @@ class LatentReplay(SupervisedTemplate):
         )
 
     def _before_training_exp(self, **kwargs):
-
         # Freeze model backbone during subsequent experiences
         if self.pretrained or self.clock.train_exp_counter > 0:
             frozen_layers, frozen_parameters = freeze_up_to(
                 self.model, self.freeze_below_layer
             )
-            print(f"Frozen layers:\n {frozen_layers}")
 
             # Adapt the model and optimizer
             self.optimizer = SGD(

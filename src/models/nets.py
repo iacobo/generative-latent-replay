@@ -1,7 +1,6 @@
 from torch import nn
 import torch
 import torchvision
-import torch.nn.functional as F
 
 from avalanche.models.base_model import BaseModel
 from avalanche.models.mobilenetv1 import remove_sequential
@@ -79,7 +78,6 @@ class FrozenNet(nn.Module):
         self.end_features = nn.Sequential(*all_layers[latent_layer_num:])
 
     def forward(self, raw_input, latent_input=None, return_lat_acts=False):
-
         if latent_input is None:
             lat_acts = self.lat_features(raw_input)
             full_acts = lat_acts
@@ -151,7 +149,7 @@ class SimpleMLP(nn.Module, BaseModel):
         :param num_classes:   output size
         :param hidden_size:   hidden layer size
         :param hidden_layers: number of hidden layers
-        :param drop_rate:     dropout rate. 0 to disable
+        :param drop_rate:     dropout rate
         """
         super().__init__()
 
@@ -177,7 +175,6 @@ class SimpleMLP(nn.Module, BaseModel):
 
 
 class LeNet(nn.Module):
-
     # network structure
     def __init__(self):
         super().__init__()

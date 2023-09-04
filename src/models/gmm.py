@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 from math import pi
-from src.utils import calculate_matmul, calculate_matmul_n_times
+from ..utils import calculate_matmul, calculate_matmul_n_times
 
 
 class GaussianMixture(torch.nn.Module):
@@ -184,7 +184,6 @@ class GaussianMixture(torch.nn.Module):
         j = np.inf
 
         while (i <= n_iter) and (j >= delta):
-
             log_likelihood_old = self.log_likelihood
             mu_old = self.mu
             var_old = self.var
