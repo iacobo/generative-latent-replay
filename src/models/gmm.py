@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 from math import pi
-from src.utils import calculate_matmul, calculate_matmul_n_times
+from ..utils import calculate_matmul, calculate_matmul_n_times
 
 
 class GaussianMixture(torch.nn.Module):
