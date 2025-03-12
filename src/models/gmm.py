@@ -184,7 +184,6 @@ class GaussianMixture(torch.nn.Module):
         j = np.inf
 
         while (i <= n_iter) and (j >= delta):
-
             log_likelihood_old = self.log_likelihood
             mu_old = self.mu
             var_old = self.var
@@ -524,12 +523,13 @@ class GaussianMixture(torch.nn.Module):
         args:
             pi:         torch.FloatTensor
         """
-        assert pi.size() in [
-            (1, self.n_components, 1)
-        ], "Input pi does not have required tensor dimensions (%i, %i, %i)" % (
-            1,
-            self.n_components,
-            1,
+        assert pi.size() in [(1, self.n_components, 1)], (
+            "Input pi does not have required tensor dimensions (%i, %i, %i)"
+            % (
+                1,
+                self.n_components,
+                1,
+            )
         )
 
         self.pi.data = pi

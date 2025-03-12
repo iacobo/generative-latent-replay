@@ -77,7 +77,6 @@ def get_strategy_names(experiment):
 
 
 def get_results_df(method_name, experiment):
-
     results = pd.read_csv(f"results/{experiment}/{method_name}/eval_results.csv")
     results = results.groupby(["eval_exp", "training_exp"]).last().reset_index()
 
@@ -154,7 +153,6 @@ def plot_results(
 
 
 def plot_final_avg_results(experiment="RotatedMNIST_buffer_size"):
-
     fig, ax = plt.subplots(1, 2, figsize=(5, 3.25), dpi=300)
     fig.suptitle("Final average performance for GLR \n on Rotated MNIST")
 
@@ -209,7 +207,6 @@ def plot_final_avg_results(experiment="RotatedMNIST_buffer_size"):
 def plot_multiple_results(
     mode="train", experiment="PermutedMNIST", repeat_vals=10, loss=False
 ):
-
     # Names of methods with results to plot.
     names = get_strategy_names(experiment)
 
@@ -266,6 +263,5 @@ def plot_single_legend(fig):
 
 
 if __name__ == "__main__":
-
     plot_random_example(4, 5)
     plot_random_example(4, 5, "RotatedMNIST")

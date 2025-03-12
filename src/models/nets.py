@@ -1,7 +1,6 @@
 from torch import nn
 import torch
 import torchvision
-import torch.nn.functional as F
 
 from avalanche.models.base_model import BaseModel
 from avalanche.models.mobilenetv1 import remove_sequential
@@ -24,7 +23,8 @@ def alexnet(small=True, norm=False):
 
     # Add flatten layer from forward
     model.avgpool = torch.nn.Sequential(
-        torch.nn.AdaptiveAvgPool2d((3, 3)), torch.nn.Flatten()  # model.avgpool,
+        torch.nn.AdaptiveAvgPool2d((3, 3)),
+        torch.nn.Flatten(),  # model.avgpool,
     )
 
     # Reduce width of linear layers
@@ -79,7 +79,6 @@ class FrozenNet(nn.Module):
         self.end_features = nn.Sequential(*all_layers[latent_layer_num:])
 
     def forward(self, raw_input, latent_input=None, return_lat_acts=False):
-
         if latent_input is None:
             lat_acts = self.lat_features(raw_input)
             full_acts = lat_acts
@@ -177,7 +176,6 @@ class SimpleMLP(nn.Module, BaseModel):
 
 
 class LeNet(nn.Module):
-
     # network structure
     def __init__(self):
         super().__init__()

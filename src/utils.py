@@ -57,7 +57,6 @@ def set_seed(seed):
 
 
 def train_model(x, model, n_epochs=4, lr=0.001, momentum=0.9):
-
     gmm = model  # models.GMM()
     parameters = gmm.parameters()  # [weights, means, stdevs]
     optimizer = optim.SGD(parameters, lr=lr, momentum=momentum)
@@ -77,7 +76,6 @@ def train_model(x, model, n_epochs=4, lr=0.001, momentum=0.9):
 
 
 def get_eval_plugin(strategy_name, experiment, csv=True, text=True):
-
     loggers = []
     base_path = Path("results") / experiment
     base_path.mkdir(exist_ok=True)

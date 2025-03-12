@@ -29,9 +29,9 @@ class GMM_WIP(nn.Module):
             self.weights = torch.ones(n_components)
         else:
             self.weights = nn.Parameter(weights)
-            assert (
-                self.weights.shape[0] == n_components
-            ), "`weights` must be the same size as `n_components`"
+            assert self.weights.shape[0] == n_components, (
+                "`weights` must be the same size as `n_components`"
+            )
         # Initialise normal mean/std's to random
         # JA: implement initialising with previous GMM's posteriors.
 
@@ -128,7 +128,6 @@ def example_problem():
 
 
 if __name__ == "__main__":
-
     X_train, y_train, X_test, y_test = example_problem()
 
     n_classes = len(np.unique(y_train))
