@@ -7,7 +7,7 @@ from pathlib import Path
 from avalanche.benchmarks.classic import RotatedMNIST, PermutedMNIST
 
 # Plotting style
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 
 
 def simpleaxis(ax, grid=False):

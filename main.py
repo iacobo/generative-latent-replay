@@ -29,13 +29,13 @@ def get_model(model_name):
     return model
 
 
-def get_experiences(experiment, n_experiences, transform):
+def get_experiences(experiment, n_experiences, transform, seed):
     if experiment == "PermutedMNIST":
         experiences = PermutedMNIST(
             n_experiences=n_experiences,
             train_transform=transform,
             eval_transform=transform,
-            seed=args.SEED,
+            seed=seed,
         )
 
     elif experiment == "RotatedMNIST":
@@ -44,7 +44,7 @@ def get_experiences(experiment, n_experiences, transform):
             n_experiences=n_experiences,
             train_transform=transform,
             eval_transform=transform,
-            seed=args.SEED,
+            seed=seed,
             rotations_list=rotations,
         )
 
@@ -134,7 +134,7 @@ def main(args):
     transform = utils.get_transforms(resize=244, n_channels=3, normalise=True)
 
     # Load dataset
-    experiences = get_experiences(args.experiment, n_experiences, transform)
+    experiences = get_experiences(args.experiment, n_experiences, transform, args.SEED)
     # Train and test streams
     train_stream = experiences.train_stream
     test_stream = experiences.test_stream

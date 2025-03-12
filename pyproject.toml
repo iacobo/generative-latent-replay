@@ -16,3 +16,12 @@ dependencies = [
     "torchvision>=0.21.0",
     "torchviz>=0.0.3",
 ]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "mypy>=1.15.0",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.9.10",
+]
