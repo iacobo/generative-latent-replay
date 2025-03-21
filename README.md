@@ -77,3 +77,15 @@ Our implementation is fully compatible with the [Avalanche](https://github.com/C
 from avalanche.training.plugins import StrategyPlugin
 from glr.strategies import GenerativeLatentReplay
 ```
+
+## Citation
+
+> [!IMPORTANT]
+> If you use any of this code in your work, please reference us:
+>
+>     @misc{armstrong2022generative,
+>           title={Generative Latent Replay for Continual Learning}, 
+>           author={J. Armstrong and A. Thakur and D. Clifton},
+>           year={2022},
+>           howpublished = "\url{https://github.com/iacobo/generative-latent-replay/blob/main/Generative_Latent_Replay.pdf?raw}",
+>     }
